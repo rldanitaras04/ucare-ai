@@ -1,0 +1,818 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export interface Database {
+  public: {
+    Enums: {
+      affiliation_type: "student" | "faculty" | "staff";
+      duty_status: "available" | "unavailable" | "seminar" | "training" | "official_activity" | "on_leave";
+      encounter_status: "in_progress" | "completed";
+      encounter_type: "medical" | "nursing";
+      odontogram_condition: "sound" | "caries" | "restored" | "missing" | "crown" | "extraction_indicated";
+      odontogram_surface: "mesial" | "distal" | "occlusal" | "buccal" | "lingual" | "whole";
+      priority_level: "emergency" | "urgent" | "priority" | "normal";
+      provider_request_status: "pending" | "for_coordination" | "confirmed" | "served" | "cancelled";
+      provider_session_status: "planned" | "confirmed" | "active" | "completed" | "cancelled";
+      provider_type: "doctor" | "dentist";
+      queue_status: "waiting" | "called" | "in_session" | "served" | "skipped";
+      request_urgency: "normal" | "urgent" | "emergency";
+      service_type: "medical" | "dental" | "nursing" | "clearance";
+      session_type: "monthly_visit" | "case_based" | "emergency";
+      visit_status: "registered" | "triaged" | "waiting_provider" | "in_consultation" | "completed" | "cancelled";
+    };
+    Functions: {
+      log_audit_event: {
+        Args: {
+          p_user_id: string | null;
+          p_action: string;
+          p_resource: string;
+          p_resource_id: string | null;
+          p_details: string | null;
+          p_ip_address: string | null;
+        };
+        Returns: string;
+      };
+      user_has_role: {
+        Args: {
+          target_role: string;
+        };
+        Returns: boolean;
+      };
+    };
+    Tables: {
+      audit_logs: {
+        Row: {
+          action: string;
+          created_at: string;
+          details: Json | null;
+          id: string;
+          ip_address: string | null;
+          resource: string;
+          resource_id: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          action: string;
+          created_at?: string;
+          details?: Json | null;
+          id?: string;
+          ip_address?: string | null;
+          resource: string;
+          resource_id?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          created_at?: string;
+          details?: Json | null;
+          id?: string;
+          ip_address?: string | null;
+          resource?: string;
+          resource_id?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      patient_profiles: {
+        Row: {
+          affiliation: Database["public"]["Enums"]["affiliation_type"] | null;
+          allergies: string[];
+          blood_type: string | null;
+          chronic_conditions: string[];
+          college_unit: string | null;
+          contact_number: string | null;
+          created_at: string;
+          date_of_birth: string | null;
+          emergency_contact_name: string | null;
+          emergency_contact_number: string | null;
+          first_name: string;
+          id: string;
+          last_name: string;
+          middle_name: string | null;
+          sex: string | null;
+          student_employee_no: string | null;
+          university_id: string;
+          updated_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          affiliation?: Database["public"]["Enums"]["affiliation_type"] | null;
+          allergies?: string[];
+          blood_type?: string | null;
+          chronic_conditions?: string[];
+          college_unit?: string | null;
+          contact_number?: string | null;
+          created_at?: string;
+          date_of_birth?: string | null;
+          emergency_contact_name?: string | null;
+          emergency_contact_number?: string | null;
+          first_name: string;
+          id?: string;
+          last_name: string;
+          middle_name?: string | null;
+          sex?: string | null;
+          student_employee_no?: string | null;
+          university_id: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          affiliation?: Database["public"]["Enums"]["affiliation_type"] | null;
+          allergies?: string[];
+          blood_type?: string | null;
+          chronic_conditions?: string[];
+          college_unit?: string | null;
+          contact_number?: string | null;
+          created_at?: string;
+          date_of_birth?: string | null;
+          emergency_contact_name?: string | null;
+          emergency_contact_number?: string | null;
+          first_name?: string;
+          id?: string;
+          last_name?: string;
+          middle_name?: string | null;
+          sex?: string | null;
+          student_employee_no?: string | null;
+          university_id?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "patient_profiles_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      permissions: {
+        Row: {
+          action: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          resource: string;
+        };
+        Insert: {
+          action: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          resource: string;
+        };
+        Update: {
+          action?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          resource?: string;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          avatar_url: string | null;
+          created_at: string;
+          email: string;
+          full_name: string | null;
+          id: string;
+          role: string;
+          updated_at: string;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          created_at?: string;
+          email: string;
+          full_name?: string | null;
+          id: string;
+          role?: string;
+          updated_at?: string;
+        };
+        Update: {
+          avatar_url?: string | null;
+          created_at?: string;
+          email?: string;
+          full_name?: string | null;
+          id?: string;
+          role?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      queue_entries: {
+        Row: {
+          called_at: string | null;
+          created_at: string;
+          id: string;
+          priority: Database["public"]["Enums"]["priority_level"];
+          queue_number: string;
+          room_station: string | null;
+          served_at: string | null;
+          service_category: Database["public"]["Enums"]["service_type"];
+          status: Database["public"]["Enums"]["queue_status"];
+          visit_id: string;
+        };
+        Insert: {
+          called_at?: string | null;
+          created_at?: string;
+          id?: string;
+          priority?: Database["public"]["Enums"]["priority_level"];
+          queue_number: string;
+          room_station?: string | null;
+          served_at?: string | null;
+          service_category: Database["public"]["Enums"]["service_type"];
+          status?: Database["public"]["Enums"]["queue_status"];
+          visit_id: string;
+        };
+        Update: {
+          called_at?: string | null;
+          created_at?: string;
+          id?: string;
+          priority?: Database["public"]["Enums"]["priority_level"];
+          queue_number?: string;
+          room_station?: string | null;
+          served_at?: string | null;
+          service_category?: Database["public"]["Enums"]["service_type"];
+          status?: Database["public"]["Enums"]["queue_status"];
+          visit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "queue_entries_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "walk_in_visits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      role_permissions: {
+        Row: {
+          created_at: string;
+          permission_id: string;
+          role_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          permission_id: string;
+          role_id: string;
+        };
+        Update: {
+          created_at?: string;
+          permission_id?: string;
+          role_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey";
+            columns: ["permission_id"];
+            isOneToOne: false;
+            referencedRelation: "permissions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      roles: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      staff_availability: {
+        Row: {
+          authorized_by: string | null;
+          created_at: string;
+          duty_status: Database["public"]["Enums"]["duty_status"];
+          end_time: string | null;
+          id: string;
+          notes: string | null;
+          staff_profile_id: string;
+          start_time: string | null;
+        };
+        Insert: {
+          authorized_by?: string | null;
+          created_at?: string;
+          duty_status?: Database["public"]["Enums"]["duty_status"];
+          end_time?: string | null;
+          id?: string;
+          notes?: string | null;
+          staff_profile_id: string;
+          start_time?: string | null;
+        };
+        Update: {
+          authorized_by?: string | null;
+          created_at?: string;
+          duty_status?: Database["public"]["Enums"]["duty_status"];
+          end_time?: string | null;
+          id?: string;
+          notes?: string | null;
+          staff_profile_id?: string;
+          start_time?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_authorized_by_fkey";
+            columns: ["authorized_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "staff_availability_staff_profile_id_fkey";
+            columns: ["staff_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      triage_records: {
+        Row: {
+          chief_complaint: string | null;
+          created_at: string;
+          diastolic_bp: number | null;
+          fallback_reason: string | null;
+          heart_rate_bpm: number | null;
+          id: string;
+          is_fallback: boolean;
+          pain_score: number | null;
+          priority: Database["public"]["Enums"]["priority_level"];
+          red_flags: string[];
+          resp_rate_cpm: number | null;
+          spo2_percent: number | null;
+          systolic_bp: number | null;
+          temperature_c: number | null;
+          triage_notes: string | null;
+          triaged_by: string;
+          visit_id: string;
+        };
+        Insert: {
+          chief_complaint?: string | null;
+          created_at?: string;
+          diastolic_bp?: number | null;
+          fallback_reason?: string | null;
+          heart_rate_bpm?: number | null;
+          id?: string;
+          is_fallback?: boolean;
+          pain_score?: number | null;
+          priority?: Database["public"]["Enums"]["priority_level"];
+          red_flags?: string[];
+          resp_rate_cpm?: number | null;
+          spo2_percent?: number | null;
+          systolic_bp?: number | null;
+          temperature_c?: number | null;
+          triage_notes?: string | null;
+          triaged_by: string;
+          visit_id: string;
+        };
+        Update: {
+          chief_complaint?: string | null;
+          created_at?: string;
+          diastolic_bp?: number | null;
+          fallback_reason?: string | null;
+          heart_rate_bpm?: number | null;
+          id?: string;
+          is_fallback?: boolean;
+          pain_score?: number | null;
+          priority?: Database["public"]["Enums"]["priority_level"];
+          red_flags?: string[];
+          resp_rate_cpm?: number | null;
+          spo2_percent?: number | null;
+          systolic_bp?: number | null;
+          temperature_c?: number | null;
+          triage_notes?: string | null;
+          triaged_by?: string;
+          visit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "triage_records_triaged_by_fkey";
+            columns: ["triaged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "triage_records_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "walk_in_visits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_roles: {
+        Row: {
+          created_at: string;
+          role_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          role_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          role_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_roles_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      walk_in_visits: {
+        Row: {
+          created_at: string;
+          id: string;
+          patient_id: string;
+          reason_for_visit: string | null;
+          service_type: Database["public"]["Enums"]["service_type"];
+          status: Database["public"]["Enums"]["visit_status"];
+          updated_at: string;
+          visit_date: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          patient_id: string;
+          reason_for_visit?: string | null;
+          service_type: Database["public"]["Enums"]["service_type"];
+          status?: Database["public"]["Enums"]["visit_status"];
+          updated_at?: string;
+          visit_date?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          patient_id?: string;
+          reason_for_visit?: string | null;
+          service_type?: Database["public"]["Enums"]["service_type"];
+          status?: Database["public"]["Enums"]["visit_status"];
+          updated_at?: string;
+          visit_date?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "walk_in_visits_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      provider_sessions: {
+        Row: {
+          created_at: string;
+          end_time: string | null;
+          id: string;
+          provider_profile_id: string;
+          provider_type: Database["public"]["Enums"]["provider_type"];
+          session_date: string;
+          session_type: Database["public"]["Enums"]["session_type"];
+          start_time: string;
+          status: Database["public"]["Enums"]["provider_session_status"];
+        };
+        Insert: {
+          created_at?: string;
+          end_time?: string | null;
+          id?: string;
+          provider_profile_id: string;
+          provider_type: Database["public"]["Enums"]["provider_type"];
+          session_date?: string;
+          session_type: Database["public"]["Enums"]["session_type"];
+          start_time?: string;
+          status?: Database["public"]["Enums"]["provider_session_status"];
+        };
+        Update: {
+          created_at?: string;
+          end_time?: string | null;
+          id?: string;
+          provider_profile_id?: string;
+          provider_type?: Database["public"]["Enums"]["provider_type"];
+          session_date?: string;
+          session_type?: Database["public"]["Enums"]["session_type"];
+          start_time?: string;
+          status?: Database["public"]["Enums"]["provider_session_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "provider_sessions_provider_profile_id_fkey";
+            columns: ["provider_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      provider_requests: {
+        Row: {
+          created_at: string;
+          id: string;
+          patient_id: string;
+          provider_type: Database["public"]["Enums"]["provider_type"];
+          reason: string | null;
+          requested_by: string;
+          status: Database["public"]["Enums"]["provider_request_status"];
+          urgency: Database["public"]["Enums"]["request_urgency"];
+          visit_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          patient_id: string;
+          provider_type: Database["public"]["Enums"]["provider_type"];
+          reason?: string | null;
+          requested_by: string;
+          status?: Database["public"]["Enums"]["provider_request_status"];
+          urgency?: Database["public"]["Enums"]["request_urgency"];
+          visit_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          patient_id?: string;
+          provider_type?: Database["public"]["Enums"]["provider_type"];
+          reason?: string | null;
+          requested_by?: string;
+          status?: Database["public"]["Enums"]["provider_request_status"];
+          urgency?: Database["public"]["Enums"]["request_urgency"];
+          visit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "provider_requests_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "provider_requests_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "provider_requests_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "walk_in_visits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      clinical_encounters: {
+        Row: {
+          assessment: string | null;
+          completed_at: string | null;
+          created_at: string;
+          diagnosis_codes: string[];
+          encounter_type: Database["public"]["Enums"]["encounter_type"];
+          id: string;
+          notes: string | null;
+          objective: string | null;
+          patient_id: string;
+          plan: string | null;
+          provider_id: string;
+          session_id: string | null;
+          started_at: string;
+          status: Database["public"]["Enums"]["encounter_status"];
+          subjective: string | null;
+          visit_id: string;
+        };
+        Insert: {
+          assessment?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          diagnosis_codes?: string[];
+          encounter_type: Database["public"]["Enums"]["encounter_type"];
+          id?: string;
+          notes?: string | null;
+          objective?: string | null;
+          patient_id: string;
+          plan?: string | null;
+          provider_id: string;
+          session_id?: string | null;
+          started_at?: string;
+          status?: Database["public"]["Enums"]["encounter_status"];
+          subjective?: string | null;
+          visit_id: string;
+        };
+        Update: {
+          assessment?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          diagnosis_codes?: string[];
+          encounter_type?: Database["public"]["Enums"]["encounter_type"];
+          id?: string;
+          notes?: string | null;
+          objective?: string | null;
+          patient_id?: string;
+          plan?: string | null;
+          provider_id?: string;
+          session_id?: string | null;
+          started_at?: string;
+          status?: Database["public"]["Enums"]["encounter_status"];
+          subjective?: string | null;
+          visit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "clinical_encounters_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "clinical_encounters_provider_id_fkey";
+            columns: ["provider_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "clinical_encounters_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "provider_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "clinical_encounters_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "walk_in_visits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dental_encounters: {
+        Row: {
+          created_at: string;
+          diagnosis: string | null;
+          dentist_id: string;
+          examination_notes: string | null;
+          id: string;
+          patient_id: string;
+          status: Database["public"]["Enums"]["encounter_status"];
+          treatment_plan: string | null;
+          visit_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          diagnosis?: string | null;
+          dentist_id: string;
+          examination_notes?: string | null;
+          id?: string;
+          patient_id: string;
+          status?: Database["public"]["Enums"]["encounter_status"];
+          treatment_plan?: string | null;
+          visit_id: string;
+        };
+        Update: {
+          created_at?: string;
+          diagnosis?: string | null;
+          dentist_id?: string;
+          examination_notes?: string | null;
+          id?: string;
+          patient_id?: string;
+          status?: Database["public"]["Enums"]["encounter_status"];
+          treatment_plan?: string | null;
+          visit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dental_encounters_dentist_id_fkey";
+            columns: ["dentist_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dental_encounters_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dental_encounters_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "walk_in_visits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      odontogram_entries: {
+        Row: {
+          condition: Database["public"]["Enums"]["odontogram_condition"];
+          created_at: string;
+          dental_encounter_id: string;
+          id: string;
+          notes: string | null;
+          patient_id: string;
+          procedure_performed: string | null;
+          surface: Database["public"]["Enums"]["odontogram_surface"];
+          tooth_number: number;
+          updated_at: string;
+        };
+        Insert: {
+          condition?: Database["public"]["Enums"]["odontogram_condition"];
+          created_at?: string;
+          dental_encounter_id: string;
+          id?: string;
+          notes?: string | null;
+          patient_id: string;
+          procedure_performed?: string | null;
+          surface: Database["public"]["Enums"]["odontogram_surface"];
+          tooth_number: number;
+          updated_at?: string;
+        };
+        Update: {
+          condition?: Database["public"]["Enums"]["odontogram_condition"];
+          created_at?: string;
+          dental_encounter_id?: string;
+          id?: string;
+          notes?: string | null;
+          patient_id?: string;
+          procedure_performed?: string | null;
+          surface?: Database["public"]["Enums"]["odontogram_surface"];
+          tooth_number?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "odontogram_entries_dental_encounter_id_fkey";
+            columns: ["dental_encounter_id"];
+            isOneToOne: false;
+            referencedRelation: "dental_encounters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "odontogram_entries_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+    };
+    Views: Record<string, never>;
+  };
+}

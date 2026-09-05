@@ -1,0 +1,12 @@
+{
+  "name": "@repo/config",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./eslint": "./eslint/index.mjs",
+    "./typescript": "./typescript/base.json"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

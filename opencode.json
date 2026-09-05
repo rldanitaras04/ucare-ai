@@ -1,0 +1,71 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "default_agent": "build",
+    "subagent_depth": 1,
+    "permission": {
+        "shell": {
+            "git push *": "ask",
+            "git reset --hard *": "ask",
+            "git clean *": "ask"
+        }
+    },
+    "agents": {
+        "build": {
+            "mode": "primary",
+            "description": "Primary implementation agent for production feature development",
+            "steps": 12
+        },
+        "plan": {
+            "mode": "primary",
+            "description": "Read-only architecture and implementation planning agent",
+            "steps": 8,
+            "permission": {
+                "edit": "deny"
+            }
+        },
+        "architect": {
+            "mode": "subagent",
+            "description": "Architecture, system design, technical decisions and complex planning",
+            "steps": 12,
+            "permission": {
+                "edit": "deny"
+            }
+        },
+        "database": {
+            "mode": "subagent",
+            "description": "Supabase PostgreSQL schema, RLS, migrations and database design",
+            "steps": 12
+        },
+        "ui": {
+            "mode": "subagent",
+            "description": "Mobile-first responsive UI and frontend implementation",
+            "steps": 10
+        },
+        "security": {
+            "mode": "subagent",
+            "description": "Security, authorization, RLS and vulnerability review",
+            "steps": 10,
+            "permission": {
+                "edit": "deny"
+            }
+        },
+        "tester": {
+            "mode": "subagent",
+            "description": "Testing, debugging, regression and quality assurance",
+            "steps": 10
+        },
+        "reviewer": {
+            "mode": "subagent",
+            "description": "Final code review for correctness, security, performance and maintainability",
+            "steps": 8,
+            "permission": {
+                "edit": "deny"
+            }
+        },
+        "quick-fix": {
+            "mode": "subagent",
+            "description": "Small isolated fixes with minimal reasoning and minimal changes",
+            "steps": 5
+        }
+    }
+}
