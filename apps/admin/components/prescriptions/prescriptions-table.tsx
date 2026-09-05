@@ -20,12 +20,14 @@ import {
   getPrescriptions,
   updatePrescriptionStatus,
   deletePrescription,
+} from "@/lib/actions/prescriptions";
+import {
   type PrescriptionWithDetails,
   type PrescriptionStatus,
   STATUS_LABELS,
   ROUTE_LABELS,
   FREQUENCY_LABELS,
-} from "@/lib/actions/prescriptions";
+} from "@/lib/types/prescriptions";
 
 const STATUS_BADGE_VARIANT: Record<PrescriptionStatus, "default" | "secondary" | "destructive" | "success" | "warning" | "info"> = {
   draft: "secondary",

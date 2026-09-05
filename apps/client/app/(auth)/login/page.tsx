@@ -9,20 +9,29 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <LoginForm />
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">
-            Sign up
-          </Link>
+    <>
+      <div className="mb-8 text-center lg:text-left">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Welcome back
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Sign in to access your health records and clinic services
         </p>
-      </CardContent>
-    </Card>
+      </div>
+      <Card className="border-border shadow-lg">
+        <CardContent className="pt-6">
+          <LoginForm />
+        </CardContent>
+      </Card>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{" "}
+        <Link
+          href="/signup"
+          className="font-medium text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-md"
+        >
+          Sign up
+        </Link>
+      </p>
+    </>
   );
 }

@@ -18,11 +18,13 @@ import {
 import {
   getProviderSessions,
   updateSessionStatus,
+} from "@/lib/actions/provider-sessions";
+import {
   type ProviderSessionWithProvider,
   type ProviderSessionStatus,
   SESSION_TYPE_LABELS,
   SESSION_STATUS_LABELS,
-} from "@/lib/actions/provider-sessions";
+} from "@/lib/types/provider-sessions";
 
 interface ProviderSessionsTableProps {
   sessions: ProviderSessionWithProvider[];

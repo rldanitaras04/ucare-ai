@@ -19,11 +19,13 @@ import {
 import {
   getHealthClearances,
   updateClearanceStatus,
+} from "@/lib/actions/health-clearances";
+import {
   type HealthClearanceWithDetails,
   type ClearanceStatus,
   CLEARANCE_TYPE_LABELS,
   CLEARANCE_STATUS_LABELS,
-} from "@/lib/actions/health-clearances";
+} from "@/lib/types/health-clearances";
 
 const STATUS_BADGE_VARIANT: Record<ClearanceStatus, "default" | "secondary" | "destructive" | "success" | "warning" | "info"> = {
   pending: "secondary",

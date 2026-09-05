@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui";
+import { Card, CardContent } from "@repo/ui";
 import { SignupForm } from "@/components/auth/signup-form";
 
 export const metadata: Metadata = {
@@ -9,20 +9,29 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>Enter your details to get started</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <SignupForm />
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            Log in
-          </Link>
+    <>
+      <div className="mb-8 text-center lg:text-left">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Create an account
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Register to access university clinic services
         </p>
-      </CardContent>
-    </Card>
+      </div>
+      <Card className="border-border shadow-lg">
+        <CardContent className="pt-6">
+          <SignupForm />
+        </CardContent>
+      </Card>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link
+          href="/login"
+          className="font-medium text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-md"
+        >
+          Log in
+        </Link>
+      </p>
+    </>
   );
 }

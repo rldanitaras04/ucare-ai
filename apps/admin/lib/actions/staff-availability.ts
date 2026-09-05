@@ -2,47 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import type {
+  DutyStatus,
+  StaffAvailabilityRecord,
+  StaffMember,
+  StaffAvailabilityWithMember,
+} from "@/lib/types/staff-availability";
 
-export type DutyStatus =
-  | "available"
-  | "unavailable"
-  | "seminar"
-  | "training"
-  | "official_activity"
-  | "on_leave";
-
-export interface StaffAvailabilityRecord {
-  id: string;
-  staff_profile_id: string;
-  duty_status: DutyStatus;
-  notes: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  authorized_by: string | null;
-  created_at: string;
-}
-
-export interface StaffMember {
-  id: string;
-  full_name: string | null;
-  email: string;
-  role: string;
-}
-
-export interface StaffAvailabilityWithMember extends StaffAvailabilityRecord {
-  staff: StaffMember | null;
-}
-
-const DUTY_STATUS_LABELS: Record<DutyStatus, string> = {
-  available: "Available",
-  unavailable: "Unavailable",
-  seminar: "Seminar",
-  training: "Training",
-  official_activity: "Official Activity",
-  on_leave: "On Leave",
+export type {
+  DutyStatus,
+  StaffAvailabilityRecord,
+  StaffMember,
+  StaffAvailabilityWithMember,
 };
-
-export { DUTY_STATUS_LABELS };
 
 export async function getStaffAvailability(): Promise<{
   data: StaffAvailabilityWithMember[] | null;

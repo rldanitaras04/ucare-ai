@@ -13,11 +13,11 @@ import {
   Input,
   Select,
 } from "@repo/ui";
+import { createHealthClearance } from "@/lib/actions/health-clearances";
 import {
-  createHealthClearance,
   CLEARANCE_TYPE_LABELS,
   type ClearanceType,
-} from "@/lib/actions/health-clearances";
+} from "@/lib/types/health-clearances";
 
 const CLEARANCE_TYPE_OPTIONS = Object.entries(CLEARANCE_TYPE_LABELS).map(
   ([value, label]) => ({ value, label })

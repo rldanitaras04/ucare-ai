@@ -19,10 +19,12 @@ import {
 import {
   getStaffAvailability,
   recordDutyStatus,
+} from "@/lib/actions/staff-availability";
+import {
   type StaffAvailabilityWithMember,
   type DutyStatus,
   DUTY_STATUS_LABELS,
-} from "@/lib/actions/staff-availability";
+} from "@/lib/types/staff-availability";
 
 interface StaffAvailabilityTableProps {
   records: StaffAvailabilityWithMember[];

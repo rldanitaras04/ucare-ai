@@ -14,14 +14,14 @@ import {
   Select,
   Badge,
 } from "@repo/ui";
+import { createPrescription } from "@/lib/actions/prescriptions";
 import {
-  createPrescription,
   ROUTE_LABELS,
   FREQUENCY_LABELS,
   type MedicationRoute,
   type MedicationFrequency,
   type PrescriptionType,
-} from "@/lib/actions/prescriptions";
+} from "@/lib/types/prescriptions";
 
 const ROUTE_OPTIONS = Object.entries(ROUTE_LABELS).map(([value, label]) => ({
   value,

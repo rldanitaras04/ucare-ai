@@ -2,96 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
-import type { Database } from "@repo/types";
+import type {
+  Prescription,
+  PrescriptionWithDetails,
+  PrescriptionStatus,
+  PrescriptionType,
+  MedicationRoute,
+  MedicationFrequency,
+} from "@/lib/types/prescriptions";
 
-type PrescriptionStatus = Database["public"]["Enums"]["prescription_status"];
-type PrescriptionType = Database["public"]["Enums"]["prescription_type"];
-type MedicationRoute = Database["public"]["Enums"]["medication_route"];
-type MedicationFrequency = Database["public"]["Enums"]["medication_frequency"];
-
-export type { PrescriptionStatus, PrescriptionType, MedicationRoute, MedicationFrequency };
-
-export interface Prescription {
-  id: string;
-  prescription_number: string;
-  patient_id: string;
-  encounter_id: string | null;
-  prescriber_id: string;
-  prescription_type: PrescriptionType;
-  status: PrescriptionStatus;
-  medication_name: string;
-  medication_strength: string | null;
-  dose: string;
-  route: MedicationRoute;
-  frequency: MedicationFrequency;
-  frequency_custom: string | null;
-  duration_days: number | null;
-  quantity: number | null;
-  instructions: string | null;
-  date_prescribed: string;
-  date_issued: string | null;
-  date_dispensed: string | null;
-  date_completed: string | null;
-  signed_at: string | null;
-  signed_by: string | null;
-  cancellation_reason: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PrescriptionWithDetails extends Prescription {
-  patient?: {
-    first_name: string;
-    last_name: string;
-    university_id: string;
-  } | null;
-  prescriber?: {
-    full_name: string | null;
-    email: string;
-  } | null;
-}
-
-const STATUS_LABELS: Record<PrescriptionStatus, string> = {
-  draft: "Draft",
-  signed: "Signed",
-  issued: "Issued",
-  dispensed: "Dispensed",
-  completed: "Completed",
-  cancelled: "Cancelled",
+export type {
+  Prescription,
+  PrescriptionWithDetails,
+  PrescriptionStatus,
+  PrescriptionType,
+  MedicationRoute,
+  MedicationFrequency,
 };
-
-const ROUTE_LABELS: Record<MedicationRoute, string> = {
-  oral: "Oral",
-  topical: "Topical",
-  intravenous: "IV",
-  intramuscular: "IM",
-  subcutaneous: "SC",
-  inhalation: "Inhalation",
-  rectal: "Rectal",
-  ophthalmic: "Ophthalmic",
-  otic: "Otic",
-  nasal: "Nasal",
-  sublingual: "Sublingual",
-  transdermal: "Transdermal",
-  other: "Other",
-};
-
-const FREQUENCY_LABELS: Record<MedicationFrequency, string> = {
-  once_daily: "Once daily",
-  twice_daily: "Twice daily",
-  three_times_daily: "Three times daily",
-  four_times_daily: "Four times daily",
-  every_4_hours: "Every 4 hours",
-  every_6_hours: "Every 6 hours",
-  every_8_hours: "Every 8 hours",
-  every_12_hours: "Every 12 hours",
-  as_needed: "As needed",
-  at_bedtime: "At bedtime",
-  with_meals: "With meals",
-  other: "Other",
-};
-
-export { STATUS_LABELS, ROUTE_LABELS, FREQUENCY_LABELS };
 
 export async function getPrescriptions(): Promise<{
   data: PrescriptionWithDetails[] | null;

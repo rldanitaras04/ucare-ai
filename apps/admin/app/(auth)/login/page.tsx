@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui";
+import { Card, CardContent } from "@repo/ui";
 import { AdminLoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
@@ -8,14 +8,23 @@ export const metadata: Metadata = {
 
 export default function AdminLoginPage() {
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Admin Login</CardTitle>
-        <CardDescription>Sign in to the administration panel</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <AdminLoginForm />
-      </CardContent>
-    </Card>
+    <>
+      <div className="mb-8 text-center lg:text-left">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Admin Login
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Sign in to the clinic administration panel
+        </p>
+      </div>
+      <Card className="border-border shadow-lg">
+        <CardContent className="pt-6">
+          <AdminLoginForm />
+        </CardContent>
+      </Card>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Authorized personnel only. All access is logged and audited.
+      </p>
+    </>
   );
 }
