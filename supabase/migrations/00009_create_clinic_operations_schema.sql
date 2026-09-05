@@ -180,7 +180,9 @@ STABLE
 SECURITY DEFINER
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = target_role
+    SELECT 1 FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = auth.uid() AND r.name = target_role
   );
 $$;
 

@@ -436,7 +436,7 @@ export default function DentalWorkspacePage({
 
           <Button
             variant="ghost"
-            className="w-full min-h-[44px]"
+            className="w-full min-h-[48px]"
             onClick={() => router.back()}
           >
             Back

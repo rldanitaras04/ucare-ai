@@ -463,7 +463,7 @@ export default function ConsultationPage({
 
           <Button
             variant="ghost"
-            className="w-full min-h-[44px]"
+            className="w-full min-h-[48px]"
             onClick={() => router.back()}
           >
             Back

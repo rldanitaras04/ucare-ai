@@ -73,8 +73,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
             </DropdownMenu>
             <Button
               variant="ghost"
-              size="icon"
-              className="sm:hidden"
+              className="sm:hidden h-12 w-12"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >

@@ -1,0 +1,206 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createServerClient } from "@repo/supabase/server";
+
+export type DutyStatus =
+  | "available"
+  | "unavailable"
+  | "seminar"
+  | "training"
+  | "official_activity"
+  | "on_leave";
+
+export interface StaffAvailabilityRecord {
+  id: string;
+  staff_profile_id: string;
+  duty_status: DutyStatus;
+  notes: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  authorized_by: string | null;
+  created_at: string;
+}
+
+export interface StaffMember {
+  id: string;
+  full_name: string | null;
+  email: string;
+  role: string;
+}
+
+export interface StaffAvailabilityWithMember extends StaffAvailabilityRecord {
+  staff: StaffMember | null;
+}
+
+const DUTY_STATUS_LABELS: Record<DutyStatus, string> = {
+  available: "Available",
+  unavailable: "Unavailable",
+  seminar: "Seminar",
+  training: "Training",
+  official_activity: "Official Activity",
+  on_leave: "On Leave",
+};
+
+export { DUTY_STATUS_LABELS };
+
+export async function getStaffAvailability(): Promise<{
+  data: StaffAvailabilityWithMember[] | null;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: "Not authenticated" };
+  }
+
+  const { data, error } = await supabase
+    .from("staff_availability")
+    .select("*, profiles:staff_profile_id(id, full_name, email, role)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  const result: StaffAvailabilityWithMember[] = (data ?? []).map(
+    (record) => {
+      const { profiles, ...rest } = record as Record<string, unknown> & {
+        profiles: StaffMember | null;
+      };
+      return {
+        ...(rest as Omit<StaffAvailabilityRecord, "staff">),
+        staff: profiles ?? null,
+      };
+    }
+  );
+
+  return { data: result, error: null };
+}
+
+export async function getAvailableStaff(): Promise<{
+  data: StaffMember[] | null;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: "Not authenticated" };
+  }
+
+  // Get profiles that are clinic staff (nurse, doctor, dentist, clinic_staff)
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role")
+    .in("role", ["nurse", "doctor", "dentist", "clinic_staff", "clinic_admin"])
+    .order("full_name");
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: data ?? [], error: null };
+}
+
+export async function recordDutyStatus(
+  staffProfileId: string,
+  dutyStatus: DutyStatus,
+  notes?: string,
+  startTime?: string,
+  endTime?: string
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const { error } = await supabase.from("staff_availability").insert({
+    staff_profile_id: staffProfileId,
+    duty_status: dutyStatus,
+    notes: notes?.trim() || null,
+    start_time: startTime || null,
+    end_time: endTime || null,
+    authorized_by: user.id,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/staff-availability");
+  return { success: true, error: null };
+}
+
+export async function updateDutyStatus(
+  recordId: string,
+  dutyStatus: DutyStatus,
+  notes?: string
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("staff_availability")
+    .update({
+      duty_status: dutyStatus,
+      notes: notes?.trim() || null,
+    })
+    .eq("id", recordId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/staff-availability");
+  return { success: true, error: null };
+}
+
+export async function getCurrentAvailability(): Promise<{
+  data: Record<string, DutyStatus> | null;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: "Not authenticated" };
+  }
+
+  // Get the latest availability record for each staff member
+  const { data: recent, error } = await supabase
+    .from("staff_availability")
+    .select("staff_profile_id, duty_status")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  const availability: Record<string, DutyStatus> = {};
+  for (const record of recent ?? []) {
+    if (!availability[record.staff_profile_id]) {
+      availability[record.staff_profile_id] = record.duty_status as DutyStatus;
+    }
+  }
+
+  return { data: availability, error: null };
+}

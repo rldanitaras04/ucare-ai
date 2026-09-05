@@ -187,9 +187,8 @@ export async function getOrCreateEncounter(visitId: string): Promise<{
     return { data: null, error: "Visit not found" };
   }
 
-  // Create new encounter
   const encounterType =
-    visit.service_type === "dental" ? "medical" : "medical";
+    visit.service_type === "dental" ? "dental" : "medical";
 
   const { data: encounter, error: insertError } = await supabase
     .from("clinical_encounters")

@@ -6,9 +6,15 @@ export interface Database {
       affiliation_type: "student" | "faculty" | "staff";
       duty_status: "available" | "unavailable" | "seminar" | "training" | "official_activity" | "on_leave";
       encounter_status: "in_progress" | "completed";
-      encounter_type: "medical" | "nursing";
+      encounter_type: "medical" | "nursing" | "dental";
+      medication_frequency: "once_daily" | "twice_daily" | "three_times_daily" | "four_times_daily" | "every_4_hours" | "every_6_hours" | "every_8_hours" | "every_12_hours" | "as_needed" | "at_bedtime" | "with_meals" | "other";
+      medication_route: "oral" | "topical" | "intravenous" | "intramuscular" | "subcutaneous" | "inhalation" | "rectal" | "ophthalmic" | "otic" | "nasal" | "sublingual" | "transdermal" | "other";
+      clearance_type: "admission" | "annual" | "internship" | "sports" | "graduation" | "employee" | "other";
+      clearance_status: "pending" | "in_review" | "requires_action" | "approved" | "denied" | "expired" | "cancelled";
       odontogram_condition: "sound" | "caries" | "restored" | "missing" | "crown" | "extraction_indicated";
       odontogram_surface: "mesial" | "distal" | "occlusal" | "buccal" | "lingual" | "whole";
+      prescription_status: "draft" | "signed" | "issued" | "dispensed" | "completed" | "cancelled";
+      prescription_type: "medical" | "dental";
       priority_level: "emergency" | "urgent" | "priority" | "normal";
       provider_request_status: "pending" | "for_coordination" | "confirmed" | "served" | "cancelled";
       provider_session_status: "planned" | "confirmed" | "active" | "completed" | "cancelled";
@@ -20,6 +26,14 @@ export interface Database {
       visit_status: "registered" | "triaged" | "waiting_provider" | "in_consultation" | "completed" | "cancelled";
     };
     Functions: {
+      generate_prescription_number: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      generate_clearance_number: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
       log_audit_event: {
         Args: {
           p_user_id: string | null;
@@ -805,6 +819,211 @@ export interface Database {
           },
           {
             foreignKeyName: "odontogram_entries_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      prescriptions: {
+        Row: {
+          cancellation_reason: string | null;
+          created_at: string;
+          date_completed: string | null;
+          date_dispensed: string | null;
+          date_issued: string | null;
+          date_prescribed: string;
+          dose: string;
+          dose_unit: string | null;
+          duration_days: number | null;
+          encounter_id: string | null;
+          frequency: Database["public"]["Enums"]["medication_frequency"];
+          frequency_custom: string | null;
+          id: string;
+          instructions: string | null;
+          medication_name: string;
+          medication_strength: string | null;
+          patient_id: string;
+          prescriber_id: string;
+          prescription_number: string;
+          prescription_type: Database["public"]["Enums"]["prescription_type"];
+          quantity: number | null;
+          route: Database["public"]["Enums"]["medication_route"];
+          signed_at: string | null;
+          signed_by: string | null;
+          status: Database["public"]["Enums"]["prescription_status"];
+          updated_at: string;
+        };
+        Insert: {
+          cancellation_reason?: string | null;
+          created_at?: string;
+          date_completed?: string | null;
+          date_dispensed?: string | null;
+          date_issued?: string | null;
+          date_prescribed?: string;
+          dose: string;
+          dose_unit?: string | null;
+          duration_days?: number | null;
+          encounter_id?: string | null;
+          frequency?: Database["public"]["Enums"]["medication_frequency"];
+          frequency_custom?: string | null;
+          id?: string;
+          instructions?: string | null;
+          medication_name: string;
+          medication_strength?: string | null;
+          patient_id: string;
+          prescriber_id: string;
+          prescription_number: string;
+          prescription_type?: Database["public"]["Enums"]["prescription_type"];
+          quantity?: number | null;
+          route?: Database["public"]["Enums"]["medication_route"];
+          signed_at?: string | null;
+          signed_by?: string | null;
+          status?: Database["public"]["Enums"]["prescription_status"];
+          updated_at?: string;
+        };
+        Update: {
+          cancellation_reason?: string | null;
+          created_at?: string;
+          date_completed?: string | null;
+          date_dispensed?: string | null;
+          date_issued?: string | null;
+          date_prescribed?: string;
+          dose?: string;
+          dose_unit?: string | null;
+          duration_days?: number | null;
+          encounter_id?: string | null;
+          frequency?: Database["public"]["Enums"]["medication_frequency"];
+          frequency_custom?: string | null;
+          id?: string;
+          instructions?: string | null;
+          medication_name?: string;
+          medication_strength?: string | null;
+          patient_id?: string;
+          prescriber_id?: string;
+          prescription_number?: string;
+          prescription_type?: Database["public"]["Enums"]["prescription_type"];
+          quantity?: number | null;
+          route?: Database["public"]["Enums"]["medication_route"];
+          signed_at?: string | null;
+          signed_by?: string | null;
+          status?: Database["public"]["Enums"]["prescription_status"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_encounter_id_fkey";
+            columns: ["encounter_id"];
+            isOneToOne: false;
+            referencedRelation: "clinical_encounters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "prescriptions_patient_id_fkey";
+            columns: ["patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "prescriptions_prescriber_id_fkey";
+            columns: ["prescriber_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "prescriptions_signed_by_fkey";
+            columns: ["signed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      health_clearances: {
+        Row: {
+          approval_date: string | null;
+          approved_by: string | null;
+          assessed_by: string | null;
+          assessment_notes: string | null;
+          clearance_number: string;
+          clearance_type: Database["public"]["Enums"]["clearance_type"];
+          created_at: string;
+          denial_reason: string | null;
+          encounter_id: string | null;
+          id: string;
+          patient_id: string;
+          purpose: string | null;
+          requirements: Json;
+          status: Database["public"]["Enums"]["clearance_status"];
+          updated_at: string;
+          valid_from: string;
+          valid_until: string | null;
+        };
+        Insert: {
+          approval_date?: string | null;
+          approved_by?: string | null;
+          assessed_by?: string | null;
+          assessment_notes?: string | null;
+          clearance_number: string;
+          clearance_type: Database["public"]["Enums"]["clearance_type"];
+          created_at?: string;
+          denial_reason?: string | null;
+          encounter_id?: string | null;
+          id?: string;
+          patient_id: string;
+          purpose?: string | null;
+          requirements?: Json;
+          status?: Database["public"]["Enums"]["clearance_status"];
+          updated_at?: string;
+          valid_from?: string;
+          valid_until?: string | null;
+        };
+        Update: {
+          approval_date?: string | null;
+          approved_by?: string | null;
+          assessed_by?: string | null;
+          assessment_notes?: string | null;
+          clearance_number?: string;
+          clearance_type?: Database["public"]["Enums"]["clearance_type"];
+          created_at?: string;
+          denial_reason?: string | null;
+          encounter_id?: string | null;
+          id?: string;
+          patient_id?: string;
+          purpose?: string | null;
+          requirements?: Json;
+          status?: Database["public"]["Enums"]["clearance_status"];
+          updated_at?: string;
+          valid_from?: string;
+          valid_until?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "health_clearances_approved_by_fkey";
+            columns: ["approved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "health_clearances_assessed_by_fkey";
+            columns: ["assessed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "health_clearances_encounter_id_fkey";
+            columns: ["encounter_id"];
+            isOneToOne: false;
+            referencedRelation: "clinical_encounters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "health_clearances_patient_id_fkey";
             columns: ["patient_id"];
             isOneToOne: false;
             referencedRelation: "patient_profiles";

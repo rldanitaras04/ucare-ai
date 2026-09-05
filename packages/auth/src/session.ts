@@ -15,8 +15,19 @@ export function createAuthUser(params: {
 }
 
 export function parseUserRole(role: string): UserRole {
-  const validRoles = ["super_admin", "admin", "staff", "user"];
-  if (validRoles.includes(role)) {
+  const validRoles: UserRole[] = [
+    "super_admin",
+    "admin",
+    "staff",
+    "user",
+    "clinic_admin",
+    "nurse",
+    "clinic_staff",
+    "doctor",
+    "dentist",
+    "patient",
+  ];
+  if (validRoles.includes(role as UserRole)) {
     return role as UserRole;
   }
   return "user";

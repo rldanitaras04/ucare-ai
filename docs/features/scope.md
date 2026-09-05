@@ -4,7 +4,7 @@
 
 ### 1. Project Overview
 
-The proposed **University Integrated Medical & Dental Health Information System** is a secure, web-based and Progressive Web Application (PWA) designed to digitize and integrate the university clinic's medical, dental, nursing, walk-in, triage, provider coordination, inventory, health clearance, and administrative operations.
+The proposed **University Integrated Medical & Dental Health Information System** is a secure, mobile-first Web Application designed to digitize and integrate the university clinic's medical, dental, nursing, walk-in, triage, provider coordination, inventory, health clearance, and administrative operations.
 
 The system shall follow a **walk-in-first clinic model**. Patients shall not book appointments through the system during the initial implementation. Instead, patients will register and be served based on their arrival, triage priority, queue position, and the actual availability of clinic personnel and visiting healthcare providers.
 

@@ -350,7 +350,7 @@ export function Odontogram({
               type="button"
               disabled={disabled}
               onClick={() => onToolChange(condition)}
-              className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all min-h-[40px] ${
+              className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all min-h-[48px] ${
                 activeTool === condition
                   ? "border-primary ring-2 ring-primary"
                   : "border-border hover:border-muted-foreground/50"
