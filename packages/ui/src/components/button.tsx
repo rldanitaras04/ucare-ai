@@ -19,6 +19,8 @@ const buttonVariants = cva(
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
+        /* 48px minimum touch target for clinical controls (ui.md spec) */
+        touch: "h-12 min-h-[48px] px-6 py-3 text-base",
       },
     },
     defaultVariants: {

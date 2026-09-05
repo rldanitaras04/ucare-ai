@@ -1,29 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  /* Colors */
+  /* ── University Blue Brand Palette ── */
   --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-muted: #f5f5f5;
-  --color-muted-foreground: #737373;
-  --color-border: #e5e5e5;
-  --color-input: #e5e5e5;
-  --color-primary: #1d4ed8;
+  --color-foreground: #0f172a;
+  --color-muted: #f8fafc;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-primary: #1e40af;
   --color-primary-foreground: #ffffff;
   --color-secondary: #f1f5f9;
   --color-secondary-foreground: #0f172a;
   --color-accent: #eff6ff;
   --color-accent-foreground: #1e40af;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #fafafa;
-  --color-success: #10b981;
-  --color-success-foreground: #fafafa;
-  --color-warning: #f59e0b;
-  --color-warning-foreground: #fafafa;
-  --color-info: #3b82f6;
-  --color-info-foreground: #fafafa;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #059669;
+  --color-success-foreground: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+  --color-info: #2563eb;
+  --color-info-foreground: #ffffff;
   --color-ring: #2563eb;
-  --color-sidebar-background: #fafafa;
+
+  /* ── Sidebar ── */
+  --color-sidebar-background: #f8fafc;
   --color-sidebar-foreground: #0f172a;
   --color-sidebar-primary: #1e40af;
   --color-sidebar-primary-foreground: #ffffff;
@@ -32,31 +34,60 @@
   --color-sidebar-border: #e2e8f0;
   --color-sidebar-ring: #2563eb;
 
-  /* Clinical Triage & University Brand Tokens */
+  /* ── Clinical Semantic Tokens ── */
   --color-brand-navy: #0f172a;
-  --color-brand-blue: #1d4ed8;
+  --color-brand-blue: #1e40af;
   --color-brand-sky: #eff6ff;
-  --color-triage-emergency: #dc2626;
-  --color-triage-urgent: #d97706;
-  --color-triage-priority: #ca8a04;
-  --color-triage-normal: #059669;
 
-  /* Typography */
+  /* Triage Priority */
+  --color-triage-emergency: #dc2626;
+  --color-triage-emergency-bg: #fef2f2;
+  --color-triage-emergency-border: #fca5a5;
+  --color-triage-urgent: #d97706;
+  --color-triage-urgent-bg: #fffbeb;
+  --color-triage-urgent-border: #fcd34d;
+  --color-triage-priority: #ca8a04;
+  --color-triage-priority-bg: #fefce8;
+  --color-triage-priority-border: #fde047;
+  --color-triage-normal: #059669;
+  --color-triage-normal-bg: #ecfdf5;
+  --color-triage-normal-border: #6ee7b7;
+
+  /* Clinic Operational Status */
+  --color-status-available: #10b981;
+  --color-status-available-bg: #ecfdf5;
+  --color-status-seminar: #8b5cf6;
+  --color-status-seminar-bg: #f5f3ff;
+  --color-status-on-leave: #64748b;
+  --color-status-on-leave-bg: #f1f5f9;
+  --color-status-fallback: #f59e0b;
+  --color-status-fallback-bg: #fffbeb;
+  --color-status-fallback-border: #fcd34d;
+
+  /* Dental Odontogram */
+  --color-dental-sound: #94a3b8;
+  --color-dental-caries: #ef4444;
+  --color-dental-restored: #3b82f6;
+  --color-dental-missing: #475569;
+  --color-dental-crown: #f59e0b;
+  --color-dental-extraction: #dc2626;
+
+  /* ── Typography ── */
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Spacing */
+  /* ── Spacing ── */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
 
-  /* Shadows */
+  /* ── Shadows ── */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
-  /* Z-index */
+  /* ── Z-index ── */
   --z-dropdown: 50;
   --z-sticky: 100;
   --z-overlay: 200;
@@ -67,44 +98,75 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #0a0a0a;
-    --color-foreground: #fafafa;
-    --color-muted: #262626;
-    --color-muted-foreground: #a3a3a3;
-    --color-border: #262626;
-    --color-input: #262626;
-    --color-primary: #3b82f6;
+    --color-background: #0f172a;
+    --color-foreground: #f8fafc;
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+    --color-border: #334155;
+    --color-input: #334155;
+    --color-primary: #2563eb;
     --color-primary-foreground: #ffffff;
     --color-secondary: #1e293b;
     --color-secondary-foreground: #f8fafc;
     --color-accent: #1e293b;
     --color-accent-foreground: #93c5fd;
     --color-destructive: #ef4444;
-    --color-destructive-foreground: #fafafa;
+    --color-destructive-foreground: #ffffff;
     --color-success: #10b981;
-    --color-success-foreground: #fafafa;
+    --color-success-foreground: #ffffff;
     --color-warning: #f59e0b;
-    --color-warning-foreground: #fafafa;
+    --color-warning-foreground: #ffffff;
     --color-info: #60a5fa;
     --color-info-foreground: #0f172a;
     --color-ring: #60a5fa;
+
+    /* Sidebar */
     --color-sidebar-background: #0f172a;
     --color-sidebar-foreground: #f8fafc;
-    --color-sidebar-primary: #3b82f6;
+    --color-sidebar-primary: #2563eb;
     --color-sidebar-primary-foreground: #ffffff;
     --color-sidebar-accent: #1e293b;
     --color-sidebar-accent-foreground: #93c5fd;
     --color-sidebar-border: #1e293b;
     --color-sidebar-ring: #60a5fa;
 
-    /* Clinical Triage & University Brand Tokens (Dark) */
+    /* Clinical Semantic Tokens (Dark) */
     --color-brand-navy: #1e293b;
-    --color-brand-blue: #3b82f6;
+    --color-brand-blue: #2563eb;
     --color-brand-sky: #172554;
+
+    /* Triage Priority (Dark) */
     --color-triage-emergency: #ef4444;
+    --color-triage-emergency-bg: #450a0a;
+    --color-triage-emergency-border: #7f1d1d;
     --color-triage-urgent: #f59e0b;
+    --color-triage-urgent-bg: #451a03;
+    --color-triage-urgent-border: #78350f;
     --color-triage-priority: #eab308;
+    --color-triage-priority-bg: #422006;
+    --color-triage-priority-border: #713f12;
     --color-triage-normal: #10b981;
+    --color-triage-normal-bg: #022c22;
+    --color-triage-normal-border: #064e3b;
+
+    /* Clinic Operational Status (Dark) */
+    --color-status-available: #34d399;
+    --color-status-available-bg: #022c22;
+    --color-status-seminar: #a78bfa;
+    --color-status-seminar-bg: #2e1065;
+    --color-status-on-leave: #94a3b8;
+    --color-status-on-leave-bg: #1e293b;
+    --color-status-fallback: #fbbf24;
+    --color-status-fallback-bg: #451a03;
+    --color-status-fallback-border: #78350f;
+
+    /* Dental Odontogram (Dark) */
+    --color-dental-sound: #64748b;
+    --color-dental-caries: #f87171;
+    --color-dental-restored: #60a5fa;
+    --color-dental-missing: #94a3b8;
+    --color-dental-crown: #fbbf24;
+    --color-dental-extraction: #f87171;
   }
 }
 
@@ -142,9 +204,32 @@
   --color-brand-blue: var(--color-brand-blue);
   --color-brand-sky: var(--color-brand-sky);
   --color-triage-emergency: var(--color-triage-emergency);
+  --color-triage-emergency-bg: var(--color-triage-emergency-bg);
+  --color-triage-emergency-border: var(--color-triage-emergency-border);
   --color-triage-urgent: var(--color-triage-urgent);
+  --color-triage-urgent-bg: var(--color-triage-urgent-bg);
+  --color-triage-urgent-border: var(--color-triage-urgent-border);
   --color-triage-priority: var(--color-triage-priority);
+  --color-triage-priority-bg: var(--color-triage-priority-bg);
+  --color-triage-priority-border: var(--color-triage-priority-border);
   --color-triage-normal: var(--color-triage-normal);
+  --color-triage-normal-bg: var(--color-triage-normal-bg);
+  --color-triage-normal-border: var(--color-triage-normal-border);
+  --color-status-available: var(--color-status-available);
+  --color-status-available-bg: var(--color-status-available-bg);
+  --color-status-seminar: var(--color-status-seminar);
+  --color-status-seminar-bg: var(--color-status-seminar-bg);
+  --color-status-on-leave: var(--color-status-on-leave);
+  --color-status-on-leave-bg: var(--color-status-on-leave-bg);
+  --color-status-fallback: var(--color-status-fallback);
+  --color-status-fallback-bg: var(--color-status-fallback-bg);
+  --color-status-fallback-border: var(--color-status-fallback-border);
+  --color-dental-sound: var(--color-dental-sound);
+  --color-dental-caries: var(--color-dental-caries);
+  --color-dental-restored: var(--color-dental-restored);
+  --color-dental-missing: var(--color-dental-missing);
+  --color-dental-crown: var(--color-dental-crown);
+  --color-dental-extraction: var(--color-dental-extraction);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --radius-sm: var(--radius-sm);
@@ -160,4 +245,11 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+}
+
+/* ── Focus Ring Utility ── */
+/* ui.md spec: focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
 }

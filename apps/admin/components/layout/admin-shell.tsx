@@ -43,9 +43,12 @@ export function AdminShell({ children, user }: AdminShellProps) {
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 border-r bg-sidebar lg:block">
+      <aside className="hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
         <div className="flex h-16 items-center px-6">
-          <Link href="/" className="text-xl font-bold">
+          <Link
+            href="/"
+            className="text-xl font-bold text-sidebar-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+          >
             UCare Admin
           </Link>
         </div>
@@ -54,7 +57,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex min-h-[48px] items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 pathname === item.href
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -75,12 +78,16 @@ export function AdminShell({ children, user }: AdminShellProps) {
           />
           <div className="fixed inset-y-0 left-0 w-64 bg-sidebar">
             <div className="flex h-16 items-center justify-between px-6">
-              <Link href="/" className="text-xl font-bold">
+              <Link
+                href="/"
+                className="text-xl font-bold text-sidebar-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+              >
                 UCare Admin
               </Link>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="text-muted-foreground"
+                className="flex h-12 w-12 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Close menu"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -93,7 +100,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`flex min-h-[48px] items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     pathname === item.href
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -112,7 +119,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden"
+            className="flex h-12 w-12 items-center justify-center rounded-md text-muted-foreground hover:bg-accent lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label="Open menu"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,7 +128,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
           </button>
           <div className="flex-1" />
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2">
+            <DropdownMenuTrigger className="flex min-h-[48px] items-center gap-2 rounded-md px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
               <Avatar name={user.email ?? ""} size="sm" />
               <span className="hidden text-sm font-medium sm:inline">
                 {user.email}

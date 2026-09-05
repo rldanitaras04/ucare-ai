@@ -184,7 +184,7 @@ export default function WalkInRegistrationPage() {
                 <p>ID: {ticket.patient.university_id}</p>
               </div>
               <div className="text-center">
-                <Button variant="outline" onClick={handleReset}>
+                <Button variant="outline" size="touch" onClick={handleReset}>
                   Register Another Patient
                 </Button>
               </div>
@@ -214,7 +214,7 @@ export default function WalkInRegistrationPage() {
                   />
                 </div>
                 <div className="flex items-end">
-                  <Button onClick={handleLookup} disabled={looking || !lookupId.trim()}>
+                  <Button size="touch" onClick={handleLookup} disabled={looking || !lookupId.trim()}>
                     {looking ? "Searching..." : "Search"}
                   </Button>
                 </div>
@@ -302,6 +302,7 @@ export default function WalkInRegistrationPage() {
                 <div className="flex justify-end">
                   <Button
                     type="submit"
+                    size="touch"
                     disabled={submitting || !serviceType || !reason.trim()}
                   >
                     {submitting ? (
