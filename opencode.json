@@ -9,7 +9,7 @@
             "git clean *": "ask"
         }
     },
-    "agents": {
+    "agent": {
         "build": {
             "mode": "primary",
             "description": "Primary implementation agent for production feature development",
