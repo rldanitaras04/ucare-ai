@@ -5,11 +5,11 @@ import { createClient } from "@repo/supabase/client";
 import { Button, Input, FormField, Card, CardHeader, CardTitle, CardContent, Alert, AlertDescription, Avatar } from "@repo/ui";
 import type { User } from "@supabase/supabase-js";
 
-interface ProfileFormProps {
+interface AdminProfileFormProps {
   user: User | null;
 }
 
-export function ProfileForm({ user }: ProfileFormProps) {
+export function AdminProfileForm({ user }: AdminProfileFormProps) {
   const initialName = user?.user_metadata?.full_name ?? "";
   const [fullName, setFullName] = React.useState(initialName);
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>((user?.user_metadata?.avatar_url as string) ?? null);
@@ -18,6 +18,23 @@ export function ProfileForm({ user }: ProfileFormProps) {
   const [success, setSuccess] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!user?.id) return;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles" as never)
+        .select("avatar_url")
+        .eq("id", user.id as never)
+        .maybeSingle();
+      if (data) {
+        const d = data as { avatar_url: string | null };
+        if (d.avatar_url) setAvatarUrl(d.avatar_url);
+      }
+    };
+    fetchAvatar();
+  }, [user?.id]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
