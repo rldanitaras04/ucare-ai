@@ -8,7 +8,7 @@ export interface Role {
   updated_at: string;
 }
 
-export interface Permission {
+export interface PermissionRow {
   id: string;
   name: string;
   description: string | null;

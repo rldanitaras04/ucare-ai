@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UCare AI",
   description: "A modern platform built with Next.js and Supabase",
+  icons: {
+    icon: "/clinic_logo.png",
+  },
 };
 
 export default function RootLayout({

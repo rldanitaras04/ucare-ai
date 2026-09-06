@@ -15,7 +15,8 @@ export type ToothSurface =
   | "distal"
   | "occlusal"
   | "buccal"
-  | "lingual";
+  | "lingual"
+  | "whole";
 
 export interface OdontogramEntry {
   tooth_number: number;
@@ -57,6 +58,7 @@ const SURFACE_LABELS: Record<ToothSurface, string> = {
   occlusal: "O",
   buccal: "B",
   lingual: "L",
+  whole: "W",
 };
 
 // FDI adult teeth: 18-11 (upper right), 21-28 (upper left), 31-38 (lower left), 41-48 (lower right)

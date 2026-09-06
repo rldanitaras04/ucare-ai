@@ -63,6 +63,11 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (callerRole !== "super_admin") {
+    return { success: false, error: "Only super administrators can change user roles" };
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({ role: newRole, updated_at: new Date().toISOString() })

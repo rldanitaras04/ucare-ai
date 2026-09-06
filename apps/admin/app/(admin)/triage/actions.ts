@@ -243,3 +243,55 @@ export async function saveTriageAssessment(
 
   return { success: true, error: null };
 }
+
+export async function getVisitsForTriage(): Promise<{
+  data: VisitWithPatient[];
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: "Not authenticated" };
+
+  const { data, error } = await supabase
+    .from("walk_in_visits")
+    .select(`
+      id,
+      patient_id,
+      service_type,
+      status,
+      reason_for_visit,
+      visit_date,
+      patient_profiles!walk_in_visits_patient_id_fkey (
+        university_id, first_name, last_name, middle_name
+      ),
+      queue_entries!queue_entries_visit_id_fkey (
+        queue_number, priority, status
+      )
+    `)
+    .eq("status", "registered")
+    .order("visit_date", { ascending: false });
+
+  if (error) return { data: [], error: error.message };
+
+  const visits: VisitWithPatient[] = (data ?? []).map((row: any) => {
+    const patient = row.patient_profiles;
+    const queue = row.queue_entries?.[0];
+    return {
+      visit_id: row.id,
+      patient_id: row.patient_id,
+      university_id: patient?.university_id ?? "N/A",
+      first_name: patient?.first_name ?? "Unknown",
+      last_name: patient?.last_name ?? "Patient",
+      middle_name: patient?.middle_name ?? null,
+      service_type: row.service_type,
+      visit_status: row.status,
+      reason_for_visit: row.reason_for_visit,
+      visit_date: row.visit_date,
+      queue_number: queue?.queue_number ?? "N/A",
+      queue_priority: queue?.priority ?? "normal",
+      queue_status: queue?.status ?? "waiting",
+    };
+  });
+
+  return { data: visits, error: null };
+}

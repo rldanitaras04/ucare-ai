@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/supabase": "workspace:*",
     "@repo/types": "workspace:*"
   },
   "devDependencies": {

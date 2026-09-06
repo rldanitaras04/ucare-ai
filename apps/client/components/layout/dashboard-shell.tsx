@@ -2,9 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@repo/supabase/client";
-import { Button, Avatar, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, Separator } from "@repo/ui";
+import {
+  Button,
+  Avatar,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  CarinaChatWidget,
+} from "@repo/ui";
 import type { User } from "@supabase/supabase-js";
 
 interface DashboardShellProps {
@@ -13,9 +23,17 @@ interface DashboardShellProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard" },
-  { name: "Profile", href: "/dashboard/profile" },
+  { name: "Dashboard", href: "/dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  { name: "Profile", href: "/dashboard/profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
+
+function NavIcon({ path }: { path: string }) {
+  return (
+    <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+    </svg>
+  );
+}
 
 export function DashboardShell({ children, user }: DashboardShellProps) {
   const pathname = usePathname();
@@ -28,93 +46,148 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     router.push("/login");
   };
 
+  const isActive = (href: string) => pathname === href;
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-[--z-sticky] border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-xl font-bold">
-              UCare AI
-            </Link>
-            <Separator orientation="vertical" className="hidden h-6 sm:block" />
-            <nav className="hidden items-center gap-4 sm:flex">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`text-sm font-medium transition-colors hover:text-foreground ${
-                    pathname === item.href
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
+    <div className="min-h-screen bg-background">
+      {/* Top Navbar */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-full w-full items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold">
+              <Image
+                src="/clinic_logo.png"
+                alt="UCare AI Clinic Logo"
+                width={28}
+                height={28}
+                className="rounded-md"
+                priority
+              />
+              <span className="hidden sm:inline">UCare AI</span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2">
+              <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
                 <Avatar name={user.email ?? ""} size="sm" />
-                <span className="hidden text-sm font-medium sm:inline">
-                  {user.email}
-                </span>
+                <span className="hidden md:inline">{user.email}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem destructive onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout}>
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              variant="ghost"
-              className="sm:hidden h-12 w-12"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-                />
-              </svg>
-            </Button>
           </div>
         </div>
-        {mobileMenuOpen && (
-          <div className="border-t px-4 py-4 sm:hidden">
-            <nav className="flex flex-col gap-2">
+      </header>
+
+      {/* Sidebar - Desktop */}
+      <aside className="fixed top-16 left-0 bottom-0 z-40 hidden w-[260px] overflow-y-auto border-r bg-sidebar md:block">
+        <div className="flex h-16 items-center gap-2 border-b px-6">
+          <Image
+            src="/clinic_logo.png"
+            alt="UCare AI Clinic Logo"
+            width={28}
+            height={28}
+            className="rounded-md"
+            priority
+          />
+          <span className="text-lg font-semibold text-sidebar-foreground">UCare AI</span>
+        </div>
+        <nav className="space-y-2 p-4">
+          {navigation.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150 ${
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+            >
+              <NavIcon path={item.icon} />
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-sidebar">
+            <div className="flex h-16 items-center justify-between border-b px-6">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/clinic_logo.png"
+                  alt="UCare AI Clinic Logo"
+                  width={28}
+                  height={28}
+                  className="rounded-md"
+                  priority
+                />
+                <span className="text-lg font-semibold text-sidebar-foreground">UCare AI</span>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
+                aria-label="Close menu"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <nav className="space-y-2 p-4">
               {navigation.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    pathname === item.href
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150 ${
+                    isActive(item.href)
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
+                  <NavIcon path={item.icon} />
                   {item.name}
                 </Link>
               ))}
             </nav>
           </div>
-        )}
-      </header>
-      <main className="flex-1 py-8">{children}</main>
+        </div>
+      )}
+
+      {/* Mobile Menu Button */}
+      <Button
+        variant="ghost"
+        className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg md:hidden"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+        </svg>
+      </Button>
+
+      {/* Main Content */}
+      <main className="pt-16 md:pl-[260px]">
+        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+          {children}
+        </div>
+      </main>
+
+      <CarinaChatWidget role="client" />
     </div>
   );
 }

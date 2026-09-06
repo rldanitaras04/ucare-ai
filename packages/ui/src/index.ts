@@ -72,3 +72,5 @@ export {
 
 export { Odontogram, CONDITION_COLORS, CONDITION_LABELS, SURFACE_LABELS } from "./components/odontogram";
 export type { ToothCondition, ToothSurface, OdontogramEntry } from "./components/odontogram";
+
+export { CarinaChatWidget } from "./components/carina-chat-widget";

@@ -11,6 +11,7 @@ export type {
   UserRoleAssignment,
   ClinicRole,
   ClinicPermission,
+  PermissionRow,
 } from "./roles";
 export {
   ROLE_HIERARCHY,

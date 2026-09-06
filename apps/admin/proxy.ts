@@ -5,11 +5,6 @@ import type { NextRequest } from "next/server";
 const AUTHORIZED_ROLES = [
   "super_admin",
   "admin",
-  "clinic_admin",
-  "nurse",
-  "clinic_staff",
-  "doctor",
-  "dentist",
 ];
 
 const PUBLIC_PATHS = ["/login", "/queue-board"];
@@ -18,7 +13,15 @@ function isAuthorizedRole(role: string | undefined): boolean {
   return AUTHORIZED_ROLES.includes(role ?? "");
 }
 
-export async function middleware(request: NextRequest) {
+function redirectWithCookies(url: URL, response: NextResponse): NextResponse {
+  const redirectResponse = NextResponse.redirect(url);
+  response.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+  });
+  return redirectResponse;
+}
+
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: request.headers },
   });
@@ -30,13 +33,13 @@ export async function middleware(request: NextRequest) {
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, response);
   }
 
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, response);
   }
 
   if (user && !isPublicPath) {
@@ -44,7 +47,7 @@ export async function middleware(request: NextRequest) {
     if (!isAuthorizedRole(userRole)) {
       const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
-      return NextResponse.redirect(url);
+      return redirectWithCookies(url, response);
     }
   }
 

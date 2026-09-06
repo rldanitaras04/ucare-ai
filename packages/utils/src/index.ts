@@ -1,6 +1,9 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+export type { CarinaMessage, CarinaChatRequest } from "./carina-chat";
+export { getCarinaSystemPrompt, buildCarinaMessages, getCarinaWelcomeMessage, getCarinaQuickReplies } from "./carina-chat";
+
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }

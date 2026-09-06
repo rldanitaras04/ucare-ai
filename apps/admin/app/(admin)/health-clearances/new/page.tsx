@@ -18,6 +18,7 @@ import {
   CLEARANCE_TYPE_LABELS,
   type ClearanceType,
 } from "@/lib/types/health-clearances";
+import { searchPatients } from "@/lib/actions/patients";
 
 const CLEARANCE_TYPE_OPTIONS = Object.entries(CLEARANCE_TYPE_LABELS).map(
   ([value, label]) => ({ value, label })
@@ -37,9 +38,12 @@ export default function NewHealthClearancePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [looking, setLooking] = React.useState(false);
 
   const [formData, setFormData] = React.useState({
     patient_university_id: "",
+    patient_id: "",
+    patient_name: "",
     clearance_type: "admission" as ClearanceType,
     purpose: "",
     valid_from: new Date().toISOString().split("T")[0],
@@ -50,18 +54,45 @@ export default function NewHealthClearancePage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePatientLookup = async () => {
+    const id = formData.patient_university_id.trim();
+    if (!id) return;
+
+    setLooking(true);
+    setError(null);
+    const { data, error: lookupError } = await searchPatients(id);
+    setLooking(false);
+
+    if (lookupError) {
+      setError(lookupError);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setError("No patient found with that University ID");
+      setFormData((prev) => ({ ...prev, patient_id: "", patient_name: "" }));
+      return;
+    }
+
+    const patient = data[0];
+    setFormData((prev) => ({
+      ...prev,
+      patient_id: patient.id,
+      patient_name: `${patient.first_name} ${patient.last_name}`,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
-    if (!formData.patient_university_id.trim()) {
-      setError("Patient University ID is required");
+    if (!formData.patient_id) {
+      setError("Please look up a valid patient first");
       setSubmitting(false);
       return;
     }
 
-    // Create default requirements based on clearance type
     const requirements = DEFAULT_REQUIREMENTS[formData.clearance_type].map(
       (name) => ({
         name,
@@ -71,7 +102,7 @@ export default function NewHealthClearancePage() {
     );
 
     const { data, error: createError } = await createHealthClearance({
-      patient_id: "placeholder", // TODO: Replace with actual patient lookup
+      patient_id: formData.patient_id,
       clearance_type: formData.clearance_type,
       purpose: formData.purpose.trim() || undefined,
       valid_from: formData.valid_from || undefined,
@@ -108,7 +139,7 @@ export default function NewHealthClearancePage() {
             <CardTitle>Patient Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className="text-sm font-medium">University ID *</label>
                 <Input
@@ -116,9 +147,30 @@ export default function NewHealthClearancePage() {
                   onChange={(e) =>
                     handleChange("patient_university_id", e.target.value)
                   }
+                  onBlur={handlePatientLookup}
                   placeholder="e.g., 2024-00001"
                   className="mt-1 min-h-[48px]"
                   required
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePatientLookup}
+                  disabled={!formData.patient_university_id.trim() || looking}
+                  className="min-h-[48px] w-full"
+                >
+                  {looking ? "Looking up..." : "Find Patient"}
+                </Button>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Patient Name</label>
+                <Input
+                  value={formData.patient_name}
+                  placeholder="Found after lookup"
+                  className="mt-1 min-h-[48px]"
+                  readOnly
                 />
               </div>
             </div>

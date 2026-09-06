@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UCare AI Admin",
   description: "Administration panel for UCare AI",
+  icons: {
+    icon: "/clinic_logo.png",
+  },
 };
 
 export default function RootLayout({

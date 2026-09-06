@@ -22,6 +22,7 @@ import {
   type MedicationFrequency,
   type PrescriptionType,
 } from "@/lib/types/prescriptions";
+import { searchPatients } from "@/lib/actions/patients";
 
 const ROUTE_OPTIONS = Object.entries(ROUTE_LABELS).map(([value, label]) => ({
   value,
@@ -37,9 +38,11 @@ export default function NewPrescriptionPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [looking, setLooking] = React.useState(false);
 
   const [formData, setFormData] = React.useState({
     patient_university_id: "",
+    patient_id: "",
     patient_name: "",
     prescription_type: "medical" as PrescriptionType,
     medication_name: "",
@@ -60,14 +63,41 @@ export default function NewPrescriptionPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePatientLookup = async () => {
+    const id = formData.patient_university_id.trim();
+    if (!id) return;
+
+    setLooking(true);
+    setError(null);
+    const { data, error: lookupError } = await searchPatients(id);
+    setLooking(false);
+
+    if (lookupError) {
+      setError(lookupError);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setError("No patient found with that University ID");
+      setFormData((prev) => ({ ...prev, patient_id: "", patient_name: "" }));
+      return;
+    }
+
+    const patient = data[0];
+    setFormData((prev) => ({
+      ...prev,
+      patient_id: patient.id,
+      patient_name: `${patient.first_name} ${patient.last_name}`,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
-    // Validate required fields
-    if (!formData.patient_university_id.trim()) {
-      setError("Patient University ID is required");
+    if (!formData.patient_id) {
+      setError("Please look up a valid patient first");
       setSubmitting(false);
       return;
     }
@@ -82,10 +112,8 @@ export default function NewPrescriptionPage() {
       return;
     }
 
-    // For now, we'll use a placeholder patient_id since we don't have patient lookup
-    // In production, this should search for the patient first
     const { data, error: createError } = await createPrescription({
-      patient_id: "placeholder", // TODO: Replace with actual patient lookup
+      patient_id: formData.patient_id,
       prescription_type: formData.prescription_type,
       medication_name: formData.medication_name.trim(),
       medication_strength: formData.medication_strength.trim() || undefined,
@@ -127,25 +155,36 @@ export default function NewPrescriptionPage() {
             <CardTitle>Patient Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-sm font-medium">University ID</label>
+                <label className="text-sm font-medium">University ID *</label>
                 <Input
                   value={formData.patient_university_id}
                   onChange={(e) => handleChange("patient_university_id", e.target.value)}
+                  onBlur={handlePatientLookup}
                   placeholder="e.g., 2024-00001"
                   className="mt-1 min-h-[48px]"
                   required
                 />
               </div>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePatientLookup}
+                  disabled={!formData.patient_university_id.trim() || looking}
+                  className="min-h-[48px] w-full"
+                >
+                  {looking ? "Looking up..." : "Find Patient"}
+                </Button>
+              </div>
               <div>
                 <label className="text-sm font-medium">Patient Name</label>
                 <Input
                   value={formData.patient_name}
-                  onChange={(e) => handleChange("patient_name", e.target.value)}
-                  placeholder="Auto-filled after lookup"
+                  placeholder="Found after lookup"
                   className="mt-1 min-h-[48px]"
-                  disabled
+                  readOnly
                 />
               </div>
             </div>

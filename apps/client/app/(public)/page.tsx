@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Button, Container } from "@repo/ui";
+import Image from "next/image";
+import { Button, Container, CarinaChatWidget } from "@repo/ui";
 
 export default function HomePage() {
   return (
@@ -12,11 +13,14 @@ export default function HomePage() {
               href="/"
               className="flex items-center gap-2 text-xl font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-md"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
+              <Image
+                src="/clinic_logo.png"
+                alt="UCare AI Clinic Logo"
+                width={32}
+                height={32}
+                className="rounded-lg"
+                priority
+              />
               UCare AI
             </Link>
             <nav className="flex items-center gap-3">
@@ -221,11 +225,13 @@ export default function HomePage() {
         <Container>
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
+              <Image
+                src="/clinic_logo.png"
+                alt="UCare AI Clinic Logo"
+                width={24}
+                height={24}
+                className="rounded"
+              />
               &copy; {new Date().getFullYear()} UCare AI. All rights reserved.
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -234,6 +240,7 @@ export default function HomePage() {
           </div>
         </Container>
       </footer>
+      <CarinaChatWidget role="client" />
     </div>
   );
 }

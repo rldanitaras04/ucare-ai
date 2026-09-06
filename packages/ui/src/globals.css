@@ -1,19 +1,39 @@
 @import "tailwindcss";
 
+/* ============================================
+   UCare AI Design System
+   Based on Cleopatra Tailwind Admin Pattern
+   ============================================ */
+
 :root {
-  /* ── University Blue Brand Palette ── */
+  /* ── Core Colors ── */
   --color-background: #ffffff;
   --color-foreground: #0f172a;
   --color-muted: #f8fafc;
   --color-muted-foreground: #64748b;
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
+  --color-ring: #2563eb;
+
+  /* ── Card / Popover ── */
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+
+  /* ── Primary (University Blue) ── */
   --color-primary: #1e40af;
   --color-primary-foreground: #ffffff;
+
+  /* ── Secondary ── */
   --color-secondary: #f1f5f9;
   --color-secondary-foreground: #0f172a;
+
+  /* ── Accent ── */
   --color-accent: #eff6ff;
   --color-accent-foreground: #1e40af;
+
+  /* ── Semantic ── */
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
   --color-success: #059669;
@@ -22,10 +42,9 @@
   --color-warning-foreground: #ffffff;
   --color-info: #2563eb;
   --color-info-foreground: #ffffff;
-  --color-ring: #2563eb;
 
   /* ── Sidebar ── */
-  --color-sidebar-background: #f8fafc;
+  --color-sidebar: #f8fafc;
   --color-sidebar-foreground: #0f172a;
   --color-sidebar-primary: #1e40af;
   --color-sidebar-primary-foreground: #ffffff;
@@ -73,19 +92,24 @@
   --color-dental-extraction: #dc2626;
 
   /* ── Typography ── */
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* ── Spacing ── */
+  /* ── Border Radius ── */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
 
   /* ── Shadows ── */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
   /* ── Z-index ── */
   --z-dropdown: 50;
@@ -94,8 +118,14 @@
   --z-modal: 300;
   --z-popover: 400;
   --z-toast: 500;
+
+  /* ── Transition Durations ── */
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
 }
 
+/* ── Dark Mode ── */
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: #0f172a;
@@ -104,6 +134,13 @@
     --color-muted-foreground: #94a3b8;
     --color-border: #334155;
     --color-input: #334155;
+    --color-ring: #60a5fa;
+
+    --color-card: #1e293b;
+    --color-card-foreground: #f8fafc;
+    --color-popover: #1e293b;
+    --color-popover-foreground: #f8fafc;
+
     --color-primary: #2563eb;
     --color-primary-foreground: #ffffff;
     --color-secondary: #1e293b;
@@ -118,10 +155,9 @@
     --color-warning-foreground: #ffffff;
     --color-info: #60a5fa;
     --color-info-foreground: #0f172a;
-    --color-ring: #60a5fa;
 
     /* Sidebar */
-    --color-sidebar-background: #0f172a;
+    --color-sidebar: #0f172a;
     --color-sidebar-foreground: #f8fafc;
     --color-sidebar-primary: #2563eb;
     --color-sidebar-primary-foreground: #ffffff;
@@ -135,7 +171,6 @@
     --color-brand-blue: #2563eb;
     --color-brand-sky: #172554;
 
-    /* Triage Priority (Dark) */
     --color-triage-emergency: #ef4444;
     --color-triage-emergency-bg: #450a0a;
     --color-triage-emergency-border: #7f1d1d;
@@ -149,7 +184,6 @@
     --color-triage-normal-bg: #022c22;
     --color-triage-normal-border: #064e3b;
 
-    /* Clinic Operational Status (Dark) */
     --color-status-available: #34d399;
     --color-status-available-bg: #022c22;
     --color-status-seminar: #a78bfa;
@@ -160,7 +194,6 @@
     --color-status-fallback-bg: #451a03;
     --color-status-fallback-border: #78350f;
 
-    /* Dental Odontogram (Dark) */
     --color-dental-sound: #64748b;
     --color-dental-caries: #f87171;
     --color-dental-restored: #60a5fa;
@@ -170,13 +203,21 @@
   }
 }
 
+/* ============================================
+   Tailwind v4 Theme Mapping
+   ============================================ */
 @theme inline {
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-popover: var(--color-popover);
+  --color-popover-foreground: var(--color-popover-foreground);
   --color-muted: var(--color-muted);
   --color-muted-foreground: var(--color-muted-foreground);
   --color-border: var(--color-border);
   --color-input: var(--color-input);
+  --color-ring: var(--color-ring);
   --color-primary: var(--color-primary);
   --color-primary-foreground: var(--color-primary-foreground);
   --color-secondary: var(--color-secondary);
@@ -191,8 +232,7 @@
   --color-warning-foreground: var(--color-warning-foreground);
   --color-info: var(--color-info);
   --color-info-foreground: var(--color-info-foreground);
-  --color-ring: var(--color-ring);
-  --color-sidebar-background: var(--color-sidebar-background);
+  --color-sidebar: var(--color-sidebar);
   --color-sidebar-foreground: var(--color-sidebar-foreground);
   --color-sidebar-primary: var(--color-sidebar-primary);
   --color-sidebar-primary-foreground: var(--color-sidebar-primary-foreground);
@@ -236,20 +276,101 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-3xl: var(--radius-3xl);
+  --radius-full: var(--radius-full);
   --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
 }
 
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
+/* ============================================
+   Base Styles (Cleopatra Pattern)
+   ============================================ */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--color-foreground);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 /* ── Focus Ring Utility ── */
-/* ui.md spec: focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 */
 *:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+/* ── Transition Theme Helper ── */
+.transition-theme {
+  transition: background-color var(--duration-200),
+    color var(--duration-200),
+    border-color var(--duration-200);
+}
+
+/* ── Skeleton Shimmer ── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-muted) 25%,
+    color-mix(in srgb, var(--color-muted-foreground) 20%, transparent) 50%,
+    var(--color-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Widget Fade-In ── */
+.widget-loading {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.widget-loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Animate In ── */
+.animate-in {
+  animation: fadeIn var(--duration-200) ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

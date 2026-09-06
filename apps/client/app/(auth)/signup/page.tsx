@@ -19,7 +19,7 @@ export default function SignupPage() {
         </p>
       </div>
       <Card className="border-border shadow-lg">
-        <CardContent className="pt-6">
+        <CardContent className="p-8">
           <SignupForm />
         </CardContent>
       </Card>
