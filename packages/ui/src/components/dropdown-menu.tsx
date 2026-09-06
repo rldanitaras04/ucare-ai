@@ -44,12 +44,10 @@ function DropdownMenu({ children }: DropdownMenuProps) {
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        triggerRef.current &&
-        !triggerRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest('[role="menu"]')) return;
+      setOpen(false);
     };
 
     if (open) {

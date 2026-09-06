@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@repo/supabase/client";
 import {
-  Button,
   Avatar,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,7 +21,13 @@ interface DashboardShellProps {
   user: User;
 }
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: string;
+}
+
+const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
   { name: "Profile", href: "/dashboard/profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
@@ -38,7 +43,7 @@ function NavIcon({ path }: { path: string }) {
 export function DashboardShell({ children, user }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -46,7 +51,10 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     router.push("/login");
   };
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname.startsWith(href);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,17 +62,15 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-full w-full items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold">
-              <Image
-                src="/clinic_logo.png"
-                alt="UCare AI Clinic Logo"
-                width={28}
-                height={28}
-                className="rounded-md"
-                priority
-              />
-              <span className="hidden sm:inline">UCare AI</span>
-            </Link>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:hidden"
+              aria-label="Open menu"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -87,7 +93,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       </header>
 
       {/* Sidebar - Desktop */}
-      <aside className="fixed top-16 left-0 bottom-0 z-40 hidden w-[260px] overflow-y-auto border-r bg-sidebar md:block">
+      <aside className="fixed top-16 left-0 bottom-0 z-40 hidden w-[260px] overflow-y-auto border-r bg-sidebar lg:block">
         <div className="flex h-16 items-center gap-2 border-b px-6">
           <Image
             src="/clinic_logo.png"
@@ -118,11 +124,11 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       </aside>
 
       {/* Mobile Sidebar Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div
             className="fixed inset-0 bg-black/50 transition-opacity"
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={() => setSidebarOpen(false)}
           />
           <div className="fixed inset-y-0 left-0 w-[280px] bg-sidebar">
             <div className="flex h-16 items-center justify-between border-b px-6">
@@ -138,7 +144,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
                 <span className="text-lg font-semibold text-sidebar-foreground">UCare AI</span>
               </div>
               <button
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => setSidebarOpen(false)}
                 className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
                 aria-label="Close menu"
               >
@@ -152,7 +158,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150 ${
                     isActive(item.href)
                       ? "bg-primary/10 text-primary"
@@ -168,20 +174,8 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         </div>
       )}
 
-      {/* Mobile Menu Button */}
-      <Button
-        variant="ghost"
-        className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg md:hidden"
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        aria-label="Toggle menu"
-      >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-        </svg>
-      </Button>
-
       {/* Main Content */}
-      <main className="pt-16 md:pl-[260px]">
+      <main className="pt-16 lg:pl-[260px]">
         <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
           {children}
         </div>

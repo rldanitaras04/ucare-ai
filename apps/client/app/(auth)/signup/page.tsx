@@ -18,7 +18,7 @@ export default function SignupPage() {
           Register to access university clinic services
         </p>
       </div>
-      <Card className="border-border shadow-lg">
+      <Card className="rounded-2xl border-border shadow-lg">
         <CardContent className="p-8">
           <SignupForm />
         </CardContent>
@@ -27,7 +27,7 @@ export default function SignupPage() {
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-medium text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-md"
+          className="font-medium text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
         >
           Log in
         </Link>

@@ -91,8 +91,8 @@ export function AdminShell({ children, user }: AdminShellProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" style={{ paddingLeft: "var(--sidebar-width, 260px)" }}>
-        <div className="flex h-full w-full items-center justify-between border-l px-4 sm:px-6">
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-full w-full items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -111,6 +111,10 @@ export function AdminShell({ children, user }: AdminShellProps) {
                 <span className="hidden md:inline">{user.email}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => router.push("/users")}>
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   Log out
                 </DropdownMenuItem>
@@ -133,7 +137,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
           />
           <span className="text-lg font-semibold text-sidebar-foreground">UCare Admin</span>
         </div>
-        <nav className="space-y-6 p-4">
+        <nav className="space-y-2 p-4">
           {navigation.map((group) => (
             <div key={group.label}>
               <h4 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -190,7 +194,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
                 </svg>
               </button>
             </div>
-            <nav className="space-y-6 p-4">
+            <nav className="space-y-2 p-4">
               {navigation.map((group) => (
                 <div key={group.label}>
                   <h4 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

@@ -17,12 +17,12 @@ export default function AdminLoginPage() {
           Sign in to the clinic administration panel
         </p>
       </div>
-      <Card className="border-border shadow-lg">
+      <Card className="rounded-2xl border-border shadow-lg">
         <CardContent className="p-8">
           <AdminLoginForm />
         </CardContent>
       </Card>
-      <p className="mt-6 text-center text-xs text-muted-foreground">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Authorized personnel only. All access is logged and audited.
       </p>
     </>

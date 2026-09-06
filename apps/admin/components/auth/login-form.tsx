@@ -45,7 +45,7 @@ export function AdminLoginForm() {
       router.push("/");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred");
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }

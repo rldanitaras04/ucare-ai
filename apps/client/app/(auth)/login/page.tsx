@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui";
+import { Card, CardContent } from "@repo/ui";
 import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default function LoginPage() {
           Sign in to access your health records and clinic services
         </p>
       </div>
-      <Card className="border-border shadow-lg">
+      <Card className="rounded-2xl border-border shadow-lg">
         <CardContent className="p-8">
           <LoginForm />
         </CardContent>
@@ -27,7 +27,7 @@ export default function LoginPage() {
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-md"
+          className="font-medium text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
         >
           Sign up
         </Link>

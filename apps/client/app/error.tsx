@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Button } from "@repo/ui";
 
 export default function GlobalError({
   error,
@@ -37,12 +38,9 @@ export default function GlobalError({
         <p className="text-muted-foreground">
           An unexpected error occurred. Please try again.
         </p>
-        <button
-          onClick={reset}
-          className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
+        <Button onClick={reset} className="min-h-[48px] px-6">
           Try Again
-        </button>
+        </Button>
       </div>
     </div>
   );
