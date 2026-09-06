@@ -6,6 +6,19 @@ export default async function AdminProfilePage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  let avatarUrl: string | null = null;
+  if (user?.id) {
+    const { data: profile } = await supabase
+      .from("profiles" as never)
+      .select("avatar_url")
+      .eq("id", user.id as never)
+      .maybeSingle();
+    if (profile) {
+      const p = profile as { avatar_url: string | null };
+      avatarUrl = p.avatar_url;
+    }
+  }
+
   return (
     <Container>
       <PageHeader
@@ -29,7 +42,7 @@ export default async function AdminProfilePage() {
           </CardContent>
         </Card>
         <div className="mt-6">
-          <AdminProfileForm user={user} />
+          <AdminProfileForm user={user} initialAvatarUrl={avatarUrl} />
         </div>
       </div>
     </Container>

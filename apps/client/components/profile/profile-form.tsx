@@ -7,12 +7,13 @@ import type { User } from "@supabase/supabase-js";
 
 interface ProfileFormProps {
   user: User | null;
+  initialAvatarUrl?: string | null;
 }
 
-export function ProfileForm({ user }: ProfileFormProps) {
+export function ProfileForm({ user, initialAvatarUrl }: ProfileFormProps) {
   const initialName = user?.user_metadata?.full_name ?? "";
   const [fullName, setFullName] = React.useState(initialName);
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>((user?.user_metadata?.avatar_url as string) ?? null);
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(initialAvatarUrl ?? (user?.user_metadata?.avatar_url as string) ?? null);
   const [uploading, setUploading] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
@@ -130,7 +131,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
           {/* Avatar Upload */}
           <div className="flex items-center gap-4">
-            <Avatar src={avatarUrl} name={user?.email ?? ""} size="lg" />
+            <Avatar key={avatarUrl || "initial"} src={avatarUrl} name={user?.email ?? ""} size="lg" />
             <div>
               <p className="text-sm font-medium text-slate-900">Profile Photo</p>
               <p className="text-xs text-slate-400">JPG, PNG or GIF. Max 2MB.</p>

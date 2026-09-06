@@ -7,34 +7,18 @@ import type { User } from "@supabase/supabase-js";
 
 interface AdminProfileFormProps {
   user: User | null;
+  initialAvatarUrl?: string | null;
 }
 
-export function AdminProfileForm({ user }: AdminProfileFormProps) {
+export function AdminProfileForm({ user, initialAvatarUrl }: AdminProfileFormProps) {
   const initialName = user?.user_metadata?.full_name ?? "";
   const [fullName, setFullName] = React.useState(initialName);
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>((user?.user_metadata?.avatar_url as string) ?? null);
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(initialAvatarUrl ?? (user?.user_metadata?.avatar_url as string) ?? null);
   const [uploading, setUploading] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    const fetchAvatar = async () => {
-      if (!user?.id) return;
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("profiles" as never)
-        .select("avatar_url")
-        .eq("id", user.id as never)
-        .maybeSingle();
-      if (data) {
-        const d = data as { avatar_url: string | null };
-        if (d.avatar_url) setAvatarUrl(d.avatar_url);
-      }
-    };
-    fetchAvatar();
-  }, [user?.id]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -147,7 +131,7 @@ export function AdminProfileForm({ user }: AdminProfileFormProps) {
 
           {/* Avatar Upload */}
           <div className="flex items-center gap-4">
-            <Avatar src={avatarUrl} name={user?.email ?? ""} size="lg" />
+            <Avatar key={avatarUrl || "initial"} src={avatarUrl} name={user?.email ?? ""} size="lg" />
             <div>
               <p className="text-sm font-medium text-slate-900">Profile Photo</p>
               <p className="text-xs text-slate-400">JPG, PNG or GIF. Max 2MB.</p>
