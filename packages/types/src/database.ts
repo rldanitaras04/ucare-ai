@@ -31,6 +31,7 @@ export interface Database {
       certificate_type: "medical" | "dental" | "referral" | "treatment_summary" | "other";
       certificate_status: "draft" | "issued" | "cancelled";
       notification_type: "queue_update" | "prescription_ready" | "clearance_status" | "provider_request" | "system_alert" | "break_glass_alert";
+      system_library_type: "icd10_diagnoses" | "medication_formulary" | "triage_severity_levels" | "specialties" | "appointment_statuses" | "queue_locations" | "service_types" | "vital_sign_units" | "allergy_types" | "blood_types" | "immunization_types" | "lab_result_units" | "referral_reasons" | "treatment_procedures" | "dental_conditions" | "tooth_surfaces" | "custom";
     };
     Functions: {
       generate_prescription_number: {
@@ -1480,6 +1481,92 @@ export interface Database {
           notified?: boolean;
         };
         Relationships: [];
+      };
+      system_libraries: {
+        Row: {
+          id: string;
+          code: string;
+          name: string;
+          description: string | null;
+          library_type: Database["public"]["Enums"]["system_library_type"];
+          is_system_reserved: boolean;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          name: string;
+          description?: string | null;
+          library_type?: Database["public"]["Enums"]["system_library_type"];
+          is_system_reserved?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          name?: string;
+          description?: string | null;
+          library_type?: Database["public"]["Enums"]["system_library_type"];
+          is_system_reserved?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      system_library_items: {
+        Row: {
+          id: string;
+          library_id: string;
+          item_code: string;
+          label: string;
+          value: string;
+          description: string | null;
+          metadata: Json;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          library_id: string;
+          item_code: string;
+          label: string;
+          value: string;
+          description?: string | null;
+          metadata?: Json;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          library_id?: string;
+          item_code?: string;
+          label?: string;
+          value?: string;
+          description?: string | null;
+          metadata?: Json;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "system_library_items_library_id_fkey";
+            columns: ["library_id"];
+            isOneToOne: false;
+            referencedRelation: "system_libraries";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

@@ -10,6 +10,7 @@ export interface UserWithProfile {
   full_name: string | null;
   avatar_url: string | null;
   role: string;
+  roles: string[];
   created_at: string;
   updated_at: string;
 }
@@ -31,7 +32,24 @@ export async function getUsers(): Promise<{ data: UserWithProfile[] | null; erro
     return { data: null, error: error.message };
   }
 
-  return { data: profiles, error: null };
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("user_id, roles(name)");
+
+  const rolesByUser: Record<string, string[]> = {};
+  (userRoles ?? []).forEach((ur: { user_id: string; roles: { name: string } | null }) => {
+    if (ur.roles?.name) {
+      if (!rolesByUser[ur.user_id]) rolesByUser[ur.user_id] = [];
+      rolesByUser[ur.user_id].push(ur.roles.name);
+    }
+  });
+
+  const enriched = (profiles ?? []).map((p) => ({
+    ...p,
+    roles: rolesByUser[p.id] ?? [p.role],
+  }));
+
+  return { data: enriched, error: null };
 }
 
 export async function getUserById(userId: string): Promise<{ data: UserWithProfile | null; error: string | null }> {
@@ -52,7 +70,16 @@ export async function getUserById(userId: string): Promise<{ data: UserWithProfi
     return { data: null, error: error.message };
   }
 
-  return { data: profile, error: null };
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("roles(name)")
+    .eq("user_id", userId);
+
+  const roles = (userRoles ?? [])
+    .map((ur: { roles: { name: string } | null }) => ur.roles?.name)
+    .filter(Boolean) as string[];
+
+  return { data: { ...profile, roles: roles.length > 0 ? roles : [profile.role] }, error: null };
 }
 
 export async function updateUserRole(userId: string, newRole: string): Promise<{ success: boolean; error: string | null }> {
@@ -64,21 +91,21 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
   }
 
   const callerRole = user.user_metadata?.role as string | undefined;
-  if (callerRole !== "super_admin") {
-    return { success: false, error: "Only super administrators can change user roles" };
+  if (!callerRole || !["super_admin", "admin"].includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to change user roles" };
   }
 
   if (userId === user.id) {
     return { success: false, error: "You cannot change your own role" };
   }
 
-  const { data: roles, error: rolesError } = await supabase
+  const { data: roleRecord, error: roleError } = await supabase
     .from("roles")
     .select("id")
     .eq("name", newRole)
     .single();
 
-  if (rolesError || !roles) {
+  if (roleError || !roleRecord) {
     return { success: false, error: `Invalid role: ${newRole}` };
   }
 
@@ -102,7 +129,7 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
 
   const { error: insertError } = await supabase
     .from("user_roles")
-    .insert({ user_id: userId, role_id: roles.id });
+    .insert({ user_id: userId, role_id: roleRecord.id });
 
   if (insertError) {
     return { success: false, error: insertError.message };
@@ -113,6 +140,96 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     resource: "profiles",
     resource_id: userId,
     details: { new_role: newRole },
+  });
+
+  revalidatePath("/users");
+  return { success: true, error: null };
+}
+
+export async function toggleUserRole(userId: string, roleName: string): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createServerClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !["super_admin", "admin"].includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to change user roles" };
+  }
+
+  if (userId === user.id) {
+    return { success: false, error: "You cannot change your own roles" };
+  }
+
+  const { data: roleRecord, error: roleError } = await supabase
+    .from("roles")
+    .select("id")
+    .eq("name", roleName)
+    .single();
+
+  if (roleError || !roleRecord) {
+    return { success: false, error: `Invalid role: ${roleName}` };
+  }
+
+  const { data: existing } = await supabase
+    .from("user_roles")
+    .select("user_id, role_id")
+    .eq("user_id", userId)
+    .eq("role_id", roleRecord.id)
+    .maybeSingle();
+
+  if (existing) {
+    const { count } = await supabase
+      .from("user_roles")
+      .select("user_id", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    if ((count ?? 0) <= 1) {
+      return { success: false, error: "Cannot remove the last role. User must have at least one role." };
+    }
+
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role_id", roleRecord.id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+  } else {
+    const { error } = await supabase
+      .from("user_roles")
+      .insert({ user_id: userId, role_id: roleRecord.id });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  const { data: currentRoles } = await supabase
+    .from("user_roles")
+    .select("roles(name)")
+    .eq("user_id", userId);
+
+  const roleNames = (currentRoles ?? [])
+    .map((ur: { roles: { name: string } | null }) => ur.roles?.name)
+    .filter(Boolean) as string[];
+
+  if (roleNames.length > 0) {
+    await supabase
+      .from("profiles")
+      .update({ role: roleNames[0], updated_at: new Date().toISOString() })
+      .eq("id", userId);
+  }
+
+  await logAuditEvent(supabase, {
+    action: AuditActions.USER_ROLE_CHANGED,
+    resource: "profiles",
+    resource_id: userId,
+    details: { action: existing ? "removed_role" : "added_role", role: roleName, current_roles: roleNames },
   });
 
   revalidatePath("/users");
@@ -178,5 +295,38 @@ export async function searchUsers(query: string): Promise<{ data: UserWithProfil
     return { data: null, error: error.message };
   }
 
-  return { data: profiles, error: null };
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("user_id, roles(name)");
+
+  const rolesByUser: Record<string, string[]> = {};
+  (userRoles ?? []).forEach((ur: { user_id: string; roles: { name: string } | null }) => {
+    if (ur.roles?.name) {
+      if (!rolesByUser[ur.user_id]) rolesByUser[ur.user_id] = [];
+      rolesByUser[ur.user_id].push(ur.roles.name);
+    }
+  });
+
+  const enriched = (profiles ?? []).map((p) => ({
+    ...p,
+    roles: rolesByUser[p.id] ?? [p.role],
+  }));
+
+  return { data: enriched, error: null };
+}
+
+export async function getAllRoles(): Promise<{ data: Array<{ id: string; name: string; description: string | null }> | null; error: string | null }> {
+  const supabase = await createServerClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: "Not authenticated" };
+  }
+
+  const { data, error } = await supabase
+    .from("roles")
+    .select("id, name, description")
+    .order("name");
+
+  return { data: data ?? [], error: error?.message ?? null };
 }

@@ -7,13 +7,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@repo/supabase/client";
 import {
   Avatar,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   CarinaChatWidget,
 } from "@repo/ui";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 import type { User } from "@supabase/supabase-js";
 
 interface DashboardShellProps {
@@ -43,6 +39,103 @@ function NavIcon({ path }: { path: string }) {
   );
 }
 
+function UserDropdown({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const [open, setOpen] = React.useState(false);
+  const router = useRouter();
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>((user.user_metadata?.avatar_url as string) ?? null);
+
+  React.useEffect(() => {
+    const fetchAvatar = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        const d = data as { avatar_url: string | null };
+        setAvatarUrl(d.avatar_url);
+      }
+    };
+    fetchAvatar();
+  }, [user.id]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const menuItems = [
+    { label: "My Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z", action: () => { router.push("/dashboard/profile"); setOpen(false); } },
+    { label: "My Prescriptions", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", action: () => { router.push("/dashboard/prescriptions"); setOpen(false); } },
+  ];
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+      >
+        <Avatar src={avatarUrl} name={user.email ?? ""} size="sm" />
+        <span className="hidden md:inline max-w-[120px] truncate">{user.email}</span>
+        <svg className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
+            <div className="border-b border-slate-100 p-4">
+              <div className="flex items-center gap-3">
+                <Avatar src={avatarUrl} name={user.email ?? ""} size="md" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">{user.email}</p>
+                  <span className="mt-0.5 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                    Patient
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="p-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={item.action}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                  </svg>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-slate-100 p-2">
+              <button
+                onClick={() => { onLogout(); setOpen(false); }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Log out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function DashboardShell({ children, user }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -60,69 +153,65 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b border-slate-200/70 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="flex h-full w-full items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 lg:hidden"
               aria-label="Open menu"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/clinic_logo.png"
+                alt="UCare AI Clinic Logo"
+                width={32}
+                height={32}
+                className="rounded-xl"
+                priority
+              />
+              <div>
+                <span className="text-base font-bold text-slate-900">UCare AI</span>
+                <p className="text-[10px] text-slate-400 font-medium">Patient Portal</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
-                <Avatar name={user.email ?? ""} size="sm" />
-                <span className="hidden md:inline">{user.email}</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-1">
+            <NotificationCenter />
+            <div className="h-6 w-px bg-slate-200 mx-1" />
+            <UserDropdown user={user} onLogout={handleLogout} />
           </div>
         </div>
       </header>
 
       {/* Sidebar - Desktop */}
-      <aside className="fixed top-16 left-0 bottom-0 z-40 hidden w-[260px] overflow-y-auto border-r bg-sidebar lg:block">
-        <div className="flex h-16 items-center gap-2 border-b px-6">
-          <Image
-            src="/clinic_logo.png"
-            alt="UCare AI Clinic Logo"
-            width={28}
-            height={28}
-            className="rounded-md"
-            priority
-          />
-          <span className="text-lg font-semibold text-sidebar-foreground">UCare AI</span>
-        </div>
-        <nav className="space-y-2 p-4">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150 ${
-                isActive(item.href)
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              }`}
-            >
-              <NavIcon path={item.icon} />
-              {item.name}
-            </Link>
-          ))}
+      <aside className="fixed top-16 left-0 bottom-0 z-40 hidden w-[260px] overflow-y-auto border-r border-slate-200/70 bg-white lg:block">
+        <nav className="p-4">
+          <h4 className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            Navigation
+          </h4>
+          <div className="space-y-0.5">
+            {navigation.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-150 ${
+                  isActive(item.href)
+                    ? "bg-slate-100 text-slate-900 font-semibold"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                }`}
+              >
+                <NavIcon path={item.icon} />
+                {item.name}
+              </Link>
+            ))}
+          </div>
         </nav>
       </aside>
 
@@ -130,48 +219,50 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="fixed inset-0 bg-black/50 transition-opacity"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-sidebar">
-            <div className="flex h-16 items-center justify-between border-b px-6">
-              <div className="flex items-center gap-2">
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-white border-r border-slate-200/70">
+            <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
+              <div className="flex items-center gap-3">
                 <Image
                   src="/clinic_logo.png"
                   alt="UCare AI Clinic Logo"
                   width={28}
                   height={28}
-                  className="rounded-md"
+                  className="rounded-lg"
                   priority
                 />
-                <span className="text-lg font-semibold text-sidebar-foreground">UCare AI</span>
+                <span className="text-sm font-bold text-slate-900">UCare AI</span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100"
                 aria-label="Close menu"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <nav className="space-y-2 p-4">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150 ${
-                    isActive(item.href)
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  <NavIcon path={item.icon} />
-                  {item.name}
-                </Link>
-              ))}
+            <nav className="p-4">
+              <div className="space-y-0.5">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-150 ${
+                      isActive(item.href)
+                        ? "bg-slate-100 text-slate-900 font-semibold"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                    }`}
+                  >
+                    <NavIcon path={item.icon} />
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             </nav>
           </div>
         </div>

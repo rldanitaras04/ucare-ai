@@ -32,7 +32,7 @@ export default function AuthLayout({
           </Link>
         </div>
         <div className="space-y-8">
-          <h1 className="text-3xl font-bold leading-tight lg:text-4xl">
+          <h1 className="text-3xl font-bold leading-tight text-white lg:text-4xl">
             University Integrated Medical &amp; Dental Health Information System
           </h1>
           <p className="text-lg text-white/70">
