@@ -30,6 +30,7 @@ export interface Database {
       stock_movement_type: "stock_in" | "stock_out" | "dispensing" | "adjustment" | "return" | "expired" | "damaged";
       certificate_type: "medical" | "dental" | "referral" | "treatment_summary" | "other";
       certificate_status: "draft" | "issued" | "cancelled";
+      notification_type: "queue_update" | "prescription_ready" | "clearance_status" | "provider_request" | "system_alert" | "break_glass_alert";
     };
     Functions: {
       generate_prescription_number: {
@@ -42,6 +43,28 @@ export interface Database {
       };
       generate_certificate_number: {
         Args: Record<string, never>;
+        Returns: string;
+      };
+      create_notification: {
+        Args: {
+          p_user_id: string;
+          p_title: string;
+          p_message: string;
+          p_type?: Database["public"]["Enums"]["notification_type"];
+          p_link_url?: string | null;
+        };
+        Returns: string;
+      };
+      mark_all_notifications_read: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
+      record_break_glass_access: {
+        Args: {
+          p_patient_id: string;
+          p_reason: string;
+          p_ip_address?: string | null;
+        };
         Returns: string;
       };
       log_audit_event: {
@@ -1392,6 +1415,69 @@ export interface Database {
           cancellation_reason?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type: Database["public"]["Enums"]["notification_type"];
+          is_read: boolean;
+          link_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type?: Database["public"]["Enums"]["notification_type"];
+          is_read?: boolean;
+          link_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          message?: string;
+          type?: Database["public"]["Enums"]["notification_type"];
+          is_read?: boolean;
+          link_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      break_glass_audit_logs: {
+        Row: {
+          id: string;
+          provider_id: string;
+          patient_id: string;
+          reason: string;
+          accessed_at: string;
+          ip_address: string | null;
+          notified: boolean;
+        };
+        Insert: {
+          id?: string;
+          provider_id: string;
+          patient_id: string;
+          reason: string;
+          accessed_at?: string;
+          ip_address?: string | null;
+          notified?: boolean;
+        };
+        Update: {
+          id?: string;
+          provider_id?: string;
+          patient_id?: string;
+          reason?: string;
+          accessed_at?: string;
+          ip_address?: string | null;
+          notified?: boolean;
         };
         Relationships: [];
       };
