@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 import type { Database } from "@repo/types";
 
+const PROVIDER_ROLES = ["super_admin", "admin", "doctor", "dentist"];
+
 type EncounterStatus = Database["public"]["Enums"]["encounter_status"];
 
 export interface VisitWithTriage {
@@ -161,6 +163,11 @@ export async function getOrCreateEncounter(visitId: string): Promise<{
   } = await supabase.auth.getUser();
   if (!user) {
     return { data: null, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to create consultations" };
   }
 
   // Check for existing active encounter

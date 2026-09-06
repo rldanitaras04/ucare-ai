@@ -11,6 +11,8 @@ import type {
   MedicationFrequency,
 } from "@/lib/types/prescriptions";
 
+const PRESCRIBER_ROLES = ["super_admin", "admin", "doctor", "dentist"];
+
 export type {
   Prescription,
   PrescriptionWithDetails,
@@ -107,6 +109,11 @@ export async function createPrescription(prescription: {
   } = await supabase.auth.getUser();
   if (!user) {
     return { data: null, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !PRESCRIBER_ROLES.includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to create prescriptions" };
   }
 
   // Generate prescription number

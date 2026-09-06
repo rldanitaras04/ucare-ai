@@ -10,6 +10,8 @@ import type {
   ProviderSessionStatus,
 } from "@/lib/types/provider-sessions";
 
+const ADMIN_ROLES = ["super_admin", "admin", "clinic_admin"];
+
 export type {
   ProviderSession,
   ProviderSessionWithProvider,
@@ -95,6 +97,11 @@ export async function createProviderSession(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to create provider sessions" };
   }
 
   const { error } = await supabase.from("provider_sessions").insert({

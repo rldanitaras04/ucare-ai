@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 
+const STAFF_ROLES = ["super_admin", "admin", "clinic_admin", "nurse", "doctor", "dentist", "staff", "clinic_staff"];
+
 export interface PatientProfile {
   id: string;
   user_id: string | null;
@@ -145,6 +147,11 @@ export async function updatePatientProfile(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to edit patient profiles" };
   }
 
   const { error } = await supabase

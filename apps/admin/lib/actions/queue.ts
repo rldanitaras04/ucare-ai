@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 
+const STAFF_ROLES = ["super_admin", "admin", "clinic_admin", "nurse", "doctor", "dentist", "staff", "clinic_staff"];
+
 export type QueueStatus = "waiting" | "called" | "in_session" | "served" | "skipped";
 export type PriorityLevel = "emergency" | "urgent" | "priority" | "normal";
 
@@ -82,6 +84,11 @@ export async function callPatient(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to call patients" };
   }
 
   const { error } = await supabase

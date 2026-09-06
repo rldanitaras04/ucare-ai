@@ -8,6 +8,17 @@ interface RequestBody {
   messages: CarinaMessage[];
 }
 
+function isValidMessage(msg: unknown): msg is CarinaMessage {
+  if (typeof msg !== "object" || msg === null) return false;
+  const m = msg as Record<string, unknown>;
+  return (
+    typeof m.role === "string" &&
+    ["user", "assistant", "system"].includes(m.role) &&
+    typeof m.content === "string" &&
+    m.content.trim().length > 0
+  );
+}
+
 export async function POST(request: Request) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,6 +44,20 @@ export async function POST(request: Request) {
   if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
     return NextResponse.json(
       { error: "Messages array is required and must not be empty" },
+      { status: 400 }
+    );
+  }
+
+  if (body.messages.length > 50) {
+    return NextResponse.json(
+      { error: "Too many messages (max 50)" },
+      { status: 400 }
+    );
+  }
+
+  if (!body.messages.every(isValidMessage)) {
+    return NextResponse.json(
+      { error: "Invalid message format: each message must have a valid role and non-empty content" },
       { status: 400 }
     );
   }

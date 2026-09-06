@@ -20,7 +20,7 @@ export function isStaff(role: UserRole): boolean {
 }
 
 export function isUser(role: UserRole): boolean {
-  return true;
+  return role === "user";
 }
 
 export function canAccessAdminPanel(role: UserRole): boolean {

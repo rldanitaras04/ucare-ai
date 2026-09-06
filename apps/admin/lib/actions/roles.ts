@@ -21,6 +21,18 @@ export interface Permission {
   created_at: string;
 }
 
+const ROLE_MUTATION_ROLES = ["super_admin", "admin"] as const;
+
+type CallerRole = string | undefined;
+
+function isSuperAdmin(callerRole: CallerRole): boolean {
+  return callerRole === "super_admin";
+}
+
+function hasRoleManagementAccess(callerRole: CallerRole): boolean {
+  return !!callerRole && ROLE_MUTATION_ROLES.includes(callerRole as typeof ROLE_MUTATION_ROLES[number]);
+}
+
 export async function getRoles(): Promise<{ data: Role[] | null; error: string | null }> {
   const supabase = await createServerClient();
 
@@ -90,9 +102,17 @@ export async function createRole(data: { name: string; description?: string }): 
     return { success: false, error: "Not authenticated" };
   }
 
+  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+    return { success: false, error: "Only super administrators can create roles" };
+  }
+
+  if (!data.name || data.name.trim().length === 0) {
+    return { success: false, error: "Role name is required" };
+  }
+
   const { error } = await supabase
     .from("roles")
-    .insert({ name: data.name, description: data.description });
+    .insert({ name: data.name.trim(), description: data.description });
 
   if (error) {
     return { success: false, error: error.message };
@@ -116,9 +136,23 @@ export async function updateRole(roleId: string, data: { name?: string; descript
     return { success: false, error: "Not authenticated" };
   }
 
+  if (!hasRoleManagementAccess(user.user_metadata?.role as string | undefined)) {
+    return { success: false, error: "Insufficient permissions to modify roles" };
+  }
+
+  if (data.name !== undefined && data.name.trim().length === 0) {
+    return { success: false, error: "Role name cannot be empty" };
+  }
+
+  const updateData: { name?: string; description?: string; updated_at: string } = {
+    updated_at: new Date().toISOString(),
+  };
+  if (data.name !== undefined) updateData.name = data.name.trim();
+  if (data.description !== undefined) updateData.description = data.description;
+
   const { error } = await supabase
     .from("roles")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq("id", roleId);
 
   if (error) {
@@ -142,6 +176,10 @@ export async function assignPermissionToRole(roleId: string, permissionId: strin
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+    return { success: false, error: "Only super administrators can assign permissions" };
   }
 
   const { error } = await supabase
@@ -168,6 +206,10 @@ export async function removePermissionFromRole(roleId: string, permissionId: str
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+    return { success: false, error: "Only super administrators can revoke permissions" };
   }
 
   const { error } = await supabase

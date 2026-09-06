@@ -5,6 +5,8 @@ import { createServerClient } from "@repo/supabase/server";
 import { logAuditEvent, AuditActions } from "@repo/auth";
 import type { Database } from "@repo/types";
 
+const STAFF_ROLES = ["super_admin", "admin", "clinic_admin", "nurse", "doctor", "dentist", "staff", "clinic_staff"];
+
 type ServiceType = Database["public"]["Enums"]["service_type"];
 
 export interface PatientProfile {
@@ -128,6 +130,11 @@ export async function registerWalkIn(
   } = await supabase.auth.getUser();
   if (!user) {
     return { data: null, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to register walk-ins" };
   }
 
   // 1. Find or create patient profile

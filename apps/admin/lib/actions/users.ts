@@ -68,13 +68,44 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     return { success: false, error: "Only super administrators can change user roles" };
   }
 
-  const { error } = await supabase
+  if (userId === user.id) {
+    return { success: false, error: "You cannot change your own role" };
+  }
+
+  const { data: roles, error: rolesError } = await supabase
+    .from("roles")
+    .select("id")
+    .eq("name", newRole)
+    .single();
+
+  if (rolesError || !roles) {
+    return { success: false, error: `Invalid role: ${newRole}` };
+  }
+
+  const { error: profileError } = await supabase
     .from("profiles")
     .update({ role: newRole, updated_at: new Date().toISOString() })
     .eq("id", userId);
 
-  if (error) {
-    return { success: false, error: error.message };
+  if (profileError) {
+    return { success: false, error: profileError.message };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("user_id", userId);
+
+  if (deleteError) {
+    return { success: false, error: deleteError.message };
+  }
+
+  const { error: insertError } = await supabase
+    .from("user_roles")
+    .insert({ user_id: userId, role_id: roles.id });
+
+  if (insertError) {
+    return { success: false, error: insertError.message };
   }
 
   await logAuditEvent(supabase, {
@@ -96,9 +127,22 @@ export async function updateUserProfile(userId: string, data: { full_name?: stri
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  const isOwnProfile = userId === user.id;
+  const hasAdminAccess = callerRole && ["super_admin", "admin"].includes(callerRole);
+
+  if (!isOwnProfile && !hasAdminAccess) {
+    return { success: false, error: "You can only edit your own profile" };
+  }
+
+  const allowedFields: { full_name?: string } = {};
+  if (data.full_name !== undefined) {
+    allowedFields.full_name = data.full_name;
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...allowedFields, updated_at: new Date().toISOString() })
     .eq("id", userId);
 
   if (error) {
@@ -109,7 +153,7 @@ export async function updateUserProfile(userId: string, data: { full_name?: stri
     action: AuditActions.USER_UPDATED,
     resource: "profiles",
     resource_id: userId,
-    details: data,
+    details: allowedFields,
   });
 
   revalidatePath("/users");

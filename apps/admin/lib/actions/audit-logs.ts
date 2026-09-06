@@ -3,6 +3,8 @@
 import { createServerClient } from "@repo/supabase/server";
 import type { Json } from "@repo/types";
 
+const ADMIN_ROLES = ["super_admin", "admin", "clinic_admin"];
+
 export interface AuditLog {
   id: string;
   user_id: string | null;
@@ -32,6 +34,11 @@ export async function getAuditLogs(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { data: null, error: "Not authenticated", count: 0 };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to view audit logs", count: 0 };
   }
 
   let query = supabase

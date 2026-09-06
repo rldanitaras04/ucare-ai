@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 import type { Database } from "@repo/types";
 
+const DENTIST_ROLES = ["super_admin", "admin", "dentist"];
+
 type OdontogramCondition = Database["public"]["Enums"]["odontogram_condition"];
 type OdontogramSurface = Database["public"]["Enums"]["odontogram_surface"];
 type EncounterStatus = Database["public"]["Enums"]["encounter_status"];
@@ -141,6 +143,11 @@ export async function getOrCreateDentalEncounter(visitId: string): Promise<{
   } = await supabase.auth.getUser();
   if (!user) {
     return { data: null, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to create dental encounters" };
   }
 
   // Check for existing active encounter

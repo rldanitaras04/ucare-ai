@@ -9,6 +9,8 @@ import type {
   StaffAvailabilityWithMember,
 } from "@/lib/types/staff-availability";
 
+const ADMIN_ROLES = ["super_admin", "admin", "clinic_admin"];
+
 export type {
   DutyStatus,
   StaffAvailabilityRecord,
@@ -94,6 +96,11 @@ export async function recordDutyStatus(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to record duty status" };
   }
 
   const { error } = await supabase.from("staff_availability").insert({

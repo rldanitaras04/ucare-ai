@@ -9,6 +9,8 @@ import type {
   HealthClearanceWithDetails,
 } from "@/lib/types/health-clearances";
 
+const CLEARANCE_ROLES = ["super_admin", "admin", "clinic_admin", "nurse", "doctor", "dentist"];
+
 export type { ClearanceType, ClearanceStatus, HealthClearance, HealthClearanceWithDetails };
 
 export async function getHealthClearances(): Promise<{
@@ -114,6 +116,11 @@ export async function createHealthClearance(clearance: {
   } = await supabase.auth.getUser();
   if (!user) {
     return { data: null, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !CLEARANCE_ROLES.includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to create health clearances" };
   }
 
   // Generate clearance number

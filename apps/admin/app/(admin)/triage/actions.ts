@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 import type { Database } from "@repo/types";
 
+const TRIAGE_ROLES = ["super_admin", "admin", "clinic_admin", "nurse", "doctor"];
+
 type PriorityLevel = Database["public"]["Enums"]["priority_level"];
 type DutyStatus = Database["public"]["Enums"]["duty_status"];
 
@@ -192,6 +194,11 @@ export async function saveTriageAssessment(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !TRIAGE_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to perform triage" };
   }
 
   // 1. Insert triage record
