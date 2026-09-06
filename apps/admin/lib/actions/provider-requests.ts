@@ -1,16 +1,21 @@
 "use server";
 
 import { createServerClient } from "@repo/supabase/server";
+import type { Database } from "@repo/types";
+
+type ProviderType = Database["public"]["Enums"]["provider_type"];
+type RequestUrgency = Database["public"]["Enums"]["request_urgency"];
+type ProviderRequestStatus = Database["public"]["Enums"]["provider_request_status"];
 
 export interface ProviderRequest {
   id: string;
   patient_id: string;
   visit_id: string;
   requested_by: string;
-  provider_type: string;
-  urgency: string;
+  provider_type: ProviderType;
+  urgency: RequestUrgency;
   reason: string | null;
-  status: string;
+  status: ProviderRequestStatus;
   created_at: string;
   patient_name?: string;
   visit_service_type?: string;
@@ -45,10 +50,10 @@ export async function getProviderRequests(): Promise<{
     patient_id: string;
     visit_id: string;
     requested_by: string;
-    provider_type: string;
-    urgency: string;
+    provider_type: ProviderType;
+    urgency: RequestUrgency;
     reason: string | null;
-    status: string;
+    status: ProviderRequestStatus;
     created_at: string;
     patient_profiles: { first_name: string; last_name: string } | null;
     walk_in_visits: { service_type: string } | null;
@@ -65,7 +70,7 @@ export async function getProviderRequests(): Promise<{
     status: r.status,
     created_at: r.created_at,
     patient_name: r.patient_profiles ? `${r.patient_profiles.first_name} ${r.patient_profiles.last_name}` : "Unknown",
-    visit_service_type: r.walk_in_visits?.service_type ?? null,
+    visit_service_type: r.walk_in_visits?.service_type ?? undefined,
   }));
 
   return { data: requests, error: null };
@@ -74,8 +79,8 @@ export async function getProviderRequests(): Promise<{
 export async function createProviderRequest(request: {
   patient_id: string;
   visit_id: string;
-  provider_type: string;
-  urgency?: string;
+  provider_type: ProviderType;
+  urgency?: RequestUrgency;
   reason?: string;
 }): Promise<{ data: ProviderRequest | null; error: string | null }> {
   const supabase = await createServerClient();
@@ -105,7 +110,7 @@ export async function createProviderRequest(request: {
 
 export async function updateProviderRequestStatus(
   requestId: string,
-  status: string
+  status: ProviderRequestStatus
 ): Promise<{ success: boolean; error: string | null }> {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
