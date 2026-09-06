@@ -252,6 +252,11 @@ export async function saveOdontogramEntries(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to save odontogram entries" };
+  }
+
   // Delete existing entries for this encounter
   const { error: deleteError } = await supabase
     .from("odontogram_entries")
@@ -308,6 +313,11 @@ export async function saveDentalFindings(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to save dental findings" };
+  }
+
   const { error } = await supabase
     .from("dental_encounters")
     .update({
@@ -338,6 +348,11 @@ export async function completeDentalEncounter(encounterId: string): Promise<{
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to complete dental encounters" };
   }
 
   // Get encounter to find visit_id

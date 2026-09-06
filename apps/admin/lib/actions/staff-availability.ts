@@ -134,6 +134,11 @@ export async function updateDutyStatus(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to update duty status" };
+  }
+
   const { error } = await supabase
     .from("staff_availability")
     .update({

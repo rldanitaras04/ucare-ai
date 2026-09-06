@@ -122,6 +122,11 @@ export async function startSession(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to start session" };
+  }
+
   const { error } = await supabase
     .from("queue_entries")
     .update({ status: "in_session" })
@@ -148,6 +153,11 @@ export async function skipPatient(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to skip patients" };
+  }
+
   const { error } = await supabase
     .from("queue_entries")
     .update({ status: "skipped" })
@@ -172,6 +182,11 @@ export async function requeuePatient(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to requeue patients" };
   }
 
   const { error } = await supabase
@@ -205,6 +220,11 @@ export async function updatePriority(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to update priority" };
+  }
+
   const { error } = await supabase
     .from("queue_entries")
     .update({ priority })
@@ -229,6 +249,11 @@ export async function assignRoom(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to assign rooms" };
   }
 
   const { error } = await supabase

@@ -246,6 +246,11 @@ export async function saveSoapNotes(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to save SOAP notes" };
+  }
+
   const { error } = await supabase
     .from("clinical_encounters")
     .update({
@@ -279,6 +284,11 @@ export async function completeEncounter(encounterId: string): Promise<{
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "Not authenticated" };
+  }
+
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to complete encounters" };
   }
 
   // Get encounter to find visit_id

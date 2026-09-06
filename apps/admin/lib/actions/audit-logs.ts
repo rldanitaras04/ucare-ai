@@ -80,6 +80,11 @@ export async function getAuditLogById(logId: string): Promise<{ data: AuditLog |
     return { data: null, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !["super_admin", "admin", "clinic_admin"].includes(callerRole)) {
+    return { data: null, error: "Insufficient permissions to view audit log details" };
+  }
+
   const { data, error } = await supabase
     .from("audit_logs")
     .select("*")

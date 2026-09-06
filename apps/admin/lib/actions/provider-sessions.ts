@@ -134,6 +134,11 @@ export async function updateSessionStatus(
     return { success: false, error: "Not authenticated" };
   }
 
+  const callerRole = user.user_metadata?.role as string | undefined;
+  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+    return { success: false, error: "Insufficient permissions to update session status" };
+  }
+
   const updateData: {
     status: ProviderSessionStatus;
     start_time?: string;
