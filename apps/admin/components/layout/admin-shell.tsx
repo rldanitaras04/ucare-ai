@@ -183,6 +183,25 @@ export function AdminShell({ children, user }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(
+    (user.user_metadata?.avatar_url as string) ?? null
+  );
+
+  React.useEffect(() => {
+    const fetchAvatar = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        const d = data as { avatar_url: string | null };
+        if (d.avatar_url) setAvatarUrl(d.avatar_url);
+      }
+    };
+    fetchAvatar();
+  }, [user.id]);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -334,7 +353,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
         </div>
       </main>
 
-      <CarinaChatWidget role="admin" />
+      <CarinaChatWidget role="admin" avatarUrl={avatarUrl} />
     </div>
   );
 }

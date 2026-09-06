@@ -10,6 +10,7 @@ import type { CarinaMessage } from "@repo/utils";
 
 interface CarinaChatWidgetProps {
   role: "admin" | "client";
+  avatarUrl?: string | null;
 }
 
 function TypingIndicator() {
@@ -204,7 +205,7 @@ function ChatInput({
   );
 }
 
-export function CarinaChatWidget({ role }: CarinaChatWidgetProps) {
+export function CarinaChatWidget({ role, avatarUrl }: CarinaChatWidgetProps) {
   const welcomeMessage = React.useMemo(() => getCarinaWelcomeMessage(role), [role]);
   const quickReplies = React.useMemo(() => getCarinaQuickReplies(role), [role]);
   const [messages, setMessages] = React.useState<CarinaMessage[]>([
@@ -504,6 +505,16 @@ export function CarinaChatWidget({ role }: CarinaChatWidgetProps) {
               >
                 {msg.content}
               </div>
+              {msg.role === "user" && avatarUrl && (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  width={24}
+                  height={24}
+                  style={{ height: 24, width: 24, borderRadius: "9999px", objectFit: "cover", flexShrink: 0 }}
+                  aria-hidden="true"
+                />
+              )}
             </div>
           ))}
           {isLoading && <TypingIndicator />}
