@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
-import { buildCarinaMessages } from "@repo/utils";
+import { buildCarinaMessages, checkRateLimit } from "@repo/utils";
 import type { CarinaMessage } from "@repo/utils";
 import { createServerClient } from "@repo/supabase/server";
 
@@ -25,6 +25,20 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = checkRateLimit(`carina:${user.id}`, { windowMs: 60_000, maxRequests: 20 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.ceil(rl.resetAt / 1000)),
+        },
+      }
+    );
   }
 
   if (!process.env.GROQ_API_KEY) {

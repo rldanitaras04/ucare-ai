@@ -50,3 +50,5 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2);
 }
+
+export { checkRateLimit, type RateLimitConfig, type RateLimitResult } from "./rate-limit";

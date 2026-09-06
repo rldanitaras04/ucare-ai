@@ -280,7 +280,27 @@ export async function getVisitsForTriage(): Promise<{
 
   if (error) return { data: [], error: error.message };
 
-  const visits: VisitWithPatient[] = (data ?? []).map((row: any) => {
+interface TriageVisitRow {
+  id: string;
+  patient_id: string;
+  service_type: string;
+  status: string;
+  reason_for_visit: string | null;
+  visit_date: string;
+  patient_profiles: {
+    university_id: string;
+    first_name: string;
+    last_name: string;
+    middle_name: string | null;
+  } | null;
+  queue_entries: Array<{
+    queue_number: string;
+    priority: string;
+    status: string;
+  }>;
+}
+
+  const visits: VisitWithPatient[] = (data ?? []).map((row: TriageVisitRow) => {
     const patient = row.patient_profiles;
     const queue = row.queue_entries?.[0];
     return {

@@ -79,7 +79,7 @@ export async function getDentalVisit(visitId: string): Promise<{
         queue_number
       ),
       triage_records!triage_records_visit_id_fkey (
-        priority_level,
+        priority,
         chief_complaint
       )
     `)
@@ -104,7 +104,7 @@ export async function getDentalVisit(visitId: string): Promise<{
     } | null;
     queue_entries: Array<{ queue_number: string }>;
     triage_records: Array<{
-      priority_level: string | null;
+      priority: string | null;
       chief_complaint: string | null;
     }>;
   };
@@ -125,7 +125,7 @@ export async function getDentalVisit(visitId: string): Promise<{
       visit_status: row.visit_status,
       reason_for_visit: row.reason_for_visit,
       queue_number: queue?.queue_number ?? "N/A",
-      priority_level: triage?.priority_level ?? null,
+      priority_level: triage?.priority ?? null,
       chief_complaint: triage?.chief_complaint ?? null,
     },
     error: null,
@@ -408,7 +408,7 @@ export async function getVisitsForDental(): Promise<{
         queue_number
       ),
       triage_records!triage_records_visit_id_fkey (
-        priority_level, chief_complaint
+        priority, chief_complaint
       )
     `)
     .eq("service_type", "dental")
@@ -417,7 +417,26 @@ export async function getVisitsForDental(): Promise<{
 
   if (error) return { data: [], error: error.message };
 
-  const visits: DentalVisitData[] = (data ?? []).map((row: any) => {
+interface DentalVisitRow {
+  id: string;
+  patient_id: string;
+  service_type: string;
+  status: string;
+  reason_for_visit: string | null;
+  patient_profiles: {
+    university_id: string;
+    first_name: string;
+    last_name: string;
+    middle_name: string | null;
+  } | null;
+  queue_entries: Array<{ queue_number: string }>;
+  triage_records: Array<{
+    priority: string | null;
+    chief_complaint: string | null;
+  }>;
+}
+
+  const visits: DentalVisitData[] = (data ?? []).map((row: DentalVisitRow) => {
     const patient = row.patient_profiles;
     const queue = row.queue_entries?.[0];
     const triage = row.triage_records?.[0];
@@ -432,7 +451,7 @@ export async function getVisitsForDental(): Promise<{
       visit_status: row.status,
       reason_for_visit: row.reason_for_visit,
       queue_number: queue?.queue_number ?? "N/A",
-      priority_level: triage?.priority_level ?? null,
+      priority_level: triage?.priority ?? null,
       chief_complaint: triage?.chief_complaint ?? null,
     };
   });

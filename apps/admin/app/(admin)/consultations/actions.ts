@@ -78,7 +78,7 @@ export async function getVisitForConsultation(visitId: string): Promise<{
         queue_number
       ),
       triage_records!triage_records_visit_id_fkey (
-        priority_level,
+        priority,
         chief_complaint,
         red_flags,
         temperature_c,
@@ -110,7 +110,7 @@ export async function getVisitForConsultation(visitId: string): Promise<{
     } | null;
     queue_entries: Array<{ queue_number: string }>;
     triage_records: Array<{
-      priority_level: string | null;
+      priority: string | null;
       chief_complaint: string | null;
       red_flags: string[];
       temperature_c: number | null;
@@ -138,7 +138,7 @@ export async function getVisitForConsultation(visitId: string): Promise<{
       visit_status: row.visit_status,
       reason_for_visit: row.reason_for_visit,
       queue_number: queue?.queue_number ?? "N/A",
-      priority_level: triage?.priority_level ?? null,
+      priority_level: triage?.priority ?? null,
       chief_complaint: triage?.chief_complaint ?? null,
       red_flags: triage?.red_flags ?? [],
       temperature_c: triage?.temperature_c ?? null,
@@ -352,7 +352,7 @@ export async function getVisitsForConsultation(): Promise<{
         queue_number
       ),
       triage_records!triage_records_visit_id_fkey (
-        priority_level, chief_complaint, red_flags,
+        priority, chief_complaint, red_flags,
         temperature_c, systolic_bp, diastolic_bp,
         heart_rate_bpm, spo2_percent, pain_score
       )
@@ -362,7 +362,33 @@ export async function getVisitsForConsultation(): Promise<{
 
   if (error) return { data: [], error: error.message };
 
-  const visits: VisitWithTriage[] = (data ?? []).map((row: any) => {
+interface ConsultationVisitRow {
+  id: string;
+  patient_id: string;
+  service_type: string;
+  status: string;
+  reason_for_visit: string | null;
+  patient_profiles: {
+    university_id: string;
+    first_name: string;
+    last_name: string;
+    middle_name: string | null;
+  } | null;
+  queue_entries: Array<{ queue_number: string }>;
+  triage_records: Array<{
+    priority: string | null;
+    chief_complaint: string | null;
+    red_flags: string[];
+    temperature_c: number | null;
+    systolic_bp: number | null;
+    diastolic_bp: number | null;
+    heart_rate_bpm: number | null;
+    spo2_percent: number | null;
+    pain_score: number | null;
+  }>;
+}
+
+  const visits: VisitWithTriage[] = (data ?? []).map((row: ConsultationVisitRow) => {
     const patient = row.patient_profiles;
     const queue = row.queue_entries?.[0];
     const triage = row.triage_records?.[0];
@@ -377,7 +403,7 @@ export async function getVisitsForConsultation(): Promise<{
       visit_status: row.status,
       reason_for_visit: row.reason_for_visit,
       queue_number: queue?.queue_number ?? "N/A",
-      priority_level: triage?.priority_level ?? null,
+      priority_level: triage?.priority ?? null,
       chief_complaint: triage?.chief_complaint ?? null,
       red_flags: triage?.red_flags ?? [],
       temperature_c: triage?.temperature_c ?? null,
