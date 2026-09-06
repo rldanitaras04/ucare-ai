@@ -55,7 +55,7 @@ export function ProfileForm({ user, initialAvatarUrl }: ProfileFormProps) {
         .from("ucare-ai-bucket")
         .getPublicUrl(filePath);
 
-      const publicUrl = urlData.publicUrl;
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
       const { error: updateError } = await supabase.auth.updateUser({
         data: { avatar_url: publicUrl },

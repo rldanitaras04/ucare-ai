@@ -125,8 +125,7 @@ function UserDropdown({ user, onLogout }: { user: User; onLogout: () => void }) 
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
       >
-        <Avatar src={profile.avatar_url} name={user.email ?? ""} size="sm" />
-        <span className="hidden md:inline max-w-[120px] truncate">{user.email}</span>
+        <Avatar key={profile.avatar_url || "none"} src={profile.avatar_url} name={user.email ?? ""} size="sm" />
         <svg className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
@@ -138,7 +137,7 @@ function UserDropdown({ user, onLogout }: { user: User; onLogout: () => void }) 
           <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
             <div className="border-b border-slate-100 p-4">
               <div className="flex items-center gap-3">
-                <Avatar src={profile.avatar_url} name={user.email ?? ""} size="md" />
+                <Avatar key={profile.avatar_url || "none"} src={profile.avatar_url} name={user.email ?? ""} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
                   <p className="truncate text-xs text-slate-400">{user.email}</p>
