@@ -1,16 +1,15 @@
 export type UserRole =
-  | "super_admin"
-  | "admin"
-  | "staff"
-  | "user"
-  | "clinic_admin"
+  | "superadmin"
   | "nurse"
-  | "clinic_staff"
+  | "staff"
   | "doctor"
   | "dentist"
   | "patient";
 
+export type PatientPersona = "student" | "faculty" | "non_teaching_staff";
+
 export type Permission =
+  // System
   | "users.view"
   | "users.create"
   | "users.update"
@@ -21,6 +20,7 @@ export type Permission =
   | "permissions.manage"
   | "audit_logs.view"
   | "settings.manage"
+  | "system.monitor"
   // Walk-ins
   | "walk_ins.view"
   | "walk_ins.create"
@@ -36,7 +36,7 @@ export type Permission =
   // Staff duty
   | "staff_duty.view"
   | "staff_duty.manage"
-  // Clinical
+  // Clinical (Medical)
   | "clinical.view"
   | "clinical.create"
   // Dental
@@ -48,12 +48,32 @@ export type Permission =
   // Clearances
   | "clearances.create"
   | "clearances.view"
-  | "clearances.approve";
+  | "clearances.approve"
+  // Reports
+  | "reports.view"
+  | "reports.export"
+  // Inventory
+  | "inventory.view"
+  | "inventory.manage"
+  // Certificates
+  | "certificates.view"
+  | "certificates.create"
+  // Provider requests
+  | "provider_requests.view"
+  | "provider_requests.create"
+  // Appointments
+  | "appointments.view"
+  | "appointments.create"
+  | "appointments.manage"
+  // Patient records (self-access)
+  | "medical_records.view_own"
+  | "dental_records.view_own";
 
 export interface AuthUser {
   id: string;
   email: string;
   role: UserRole;
+  persona?: PatientPersona;
   permissions: Permission[];
 }
 

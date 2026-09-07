@@ -8,28 +8,14 @@ import {
 import type { Permission, UserRole } from "@repo/types";
 
 describe("getPermissionsForRole", () => {
-  it("super_admin has all admin permissions", () => {
-    const perms = getPermissionsForRole("super_admin");
+  it("superadmin has all admin permissions", () => {
+    const perms = getPermissionsForRole("superadmin");
     expect(perms).toContain("users.view");
     expect(perms).toContain("users.create");
     expect(perms).toContain("roles.manage");
     expect(perms).toContain("permissions.manage");
     expect(perms).toContain("audit_logs.view");
     expect(perms).toContain("settings.manage");
-  });
-
-  it("admin has user and role permissions", () => {
-    const perms = getPermissionsForRole("admin");
-    expect(perms).toContain("users.view");
-    expect(perms).toContain("users.create");
-    expect(perms).toContain("roles.view");
-    expect(perms).toContain("audit_logs.view");
-    expect(perms).not.toContain("roles.manage");
-    expect(perms).not.toContain("settings.manage");
-  });
-
-  it("user has no permissions", () => {
-    expect(getPermissionsForRole("user")).toEqual([]);
   });
 
   it("nurse has clinical permissions", () => {
@@ -40,6 +26,14 @@ describe("getPermissionsForRole", () => {
     expect(perms).toContain("clinical.create");
   });
 
+  it("doctor has clinical and prescription permissions", () => {
+    const perms = getPermissionsForRole("doctor");
+    expect(perms).toContain("clinical.view");
+    expect(perms).toContain("clinical.create");
+    expect(perms).toContain("prescriptions.create");
+    expect(perms).toContain("prescriptions.view");
+  });
+
   it("dentist has dental permissions", () => {
     const perms = getPermissionsForRole("dentist");
     expect(perms).toContain("dental.view");
@@ -47,11 +41,20 @@ describe("getPermissionsForRole", () => {
     expect(perms).toContain("prescriptions.create");
   });
 
-  it("patient has limited permissions", () => {
-    const perms = getPermissionsForRole("patient");
+  it("staff has registration and queue permissions", () => {
+    const perms = getPermissionsForRole("staff");
     expect(perms).toContain("walk_ins.view");
+    expect(perms).toContain("walk_ins.create");
     expect(perms).toContain("queue.view");
     expect(perms).not.toContain("clinical.create");
+  });
+
+  it("patient has limited self-service permissions", () => {
+    const perms = getPermissionsForRole("patient");
+    expect(perms).toContain("queue.view");
+    expect(perms).toContain("clearances.view");
+    expect(perms).not.toContain("clinical.create");
+    expect(perms).not.toContain("users.view");
   });
 });
 

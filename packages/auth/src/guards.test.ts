@@ -32,14 +32,14 @@ describe("requirePermission", () => {
 
 describe("requireRole", () => {
   it("authorizes when role is sufficient", () => {
-    const result = requireRole("admin", "staff");
+    const result = requireRole("superadmin", "staff");
     expect(result.authorized).toBe(true);
   });
 
   it("rejects when role is insufficient", () => {
-    const result = requireRole("user", "admin");
+    const result = requireRole("patient", "superadmin");
     expect(result.authorized).toBe(false);
-    expect(result.reason).toContain("admin");
+    expect(result.reason).toContain("superadmin");
   });
 
   it("authorizes same-level role", () => {
@@ -50,7 +50,7 @@ describe("requireRole", () => {
 
 describe("requireAuth", () => {
   it("authorizes when user exists", () => {
-    const user = makeUser("admin");
+    const user = makeUser("superadmin");
     const result = requireAuth(user);
     expect(result.authorized).toBe(true);
   });
@@ -63,26 +63,26 @@ describe("requireAuth", () => {
 });
 
 describe("requireAdminAccess", () => {
-  it("authorizes admin", () => {
-    const user = makeUser("admin");
+  it("authorizes superadmin", () => {
+    const user = makeUser("superadmin");
     const result = requireAdminAccess(user);
     expect(result.authorized).toBe(true);
   });
 
-  it("authorizes super_admin", () => {
-    const user = makeUser("super_admin");
+  it("authorizes nurse", () => {
+    const user = makeUser("nurse");
     const result = requireAdminAccess(user);
     expect(result.authorized).toBe(true);
-  });
-
-  it("rejects clinic_admin", () => {
-    const user = makeUser("clinic_admin");
-    const result = requireAdminAccess(user);
-    expect(result.authorized).toBe(false);
   });
 
   it("rejects staff", () => {
     const user = makeUser("staff");
+    const result = requireAdminAccess(user);
+    expect(result.authorized).toBe(false);
+  });
+
+  it("rejects patient", () => {
+    const user = makeUser("patient");
     const result = requireAdminAccess(user);
     expect(result.authorized).toBe(false);
   });
@@ -95,36 +95,36 @@ describe("requireAdminAccess", () => {
 
 describe("canPerformAction", () => {
   it("authorizes with matching permission", () => {
-    const user = makeUser("admin", ["users.view"]);
+    const user = makeUser("superadmin", ["users.view"]);
     const result = canPerformAction(user, { permission: "users.view" });
     expect(result.authorized).toBe(true);
   });
 
   it("rejects without matching permission", () => {
-    const user = makeUser("admin", []);
+    const user = makeUser("superadmin", []);
     const result = canPerformAction(user, { permission: "users.view" });
     expect(result.authorized).toBe(false);
   });
 
   it("authorizes with sufficient role", () => {
-    const user = makeUser("admin");
+    const user = makeUser("superadmin");
     const result = canPerformAction(user, { role: "staff" });
     expect(result.authorized).toBe(true);
   });
 
   it("rejects with insufficient role", () => {
-    const user = makeUser("user");
-    const result = canPerformAction(user, { role: "admin" });
+    const user = makeUser("patient");
+    const result = canPerformAction(user, { role: "superadmin" });
     expect(result.authorized).toBe(false);
   });
 
   it("rejects null user", () => {
-    const result = canPerformAction(null, { role: "user" });
+    const result = canPerformAction(null, { role: "patient" });
     expect(result.authorized).toBe(false);
   });
 
   it("requires both permission and role when both specified", () => {
-    const user = makeUser("admin", ["users.view"]);
+    const user = makeUser("superadmin", ["users.view"]);
     const result = canPerformAction(user, {
       permission: "users.view",
       role: "staff",
@@ -133,7 +133,7 @@ describe("canPerformAction", () => {
   });
 
   it("rejects if permission missing even with sufficient role", () => {
-    const user = makeUser("admin", []);
+    const user = makeUser("superadmin", []);
     const result = canPerformAction(user, {
       permission: "users.view",
       role: "staff",

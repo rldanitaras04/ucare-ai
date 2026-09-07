@@ -1,0 +1,103 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createServerClient } from "@repo/supabase/server";
+import type { Database } from "@repo/types";
+
+type NotificationType = Database["public"]["Enums"]["notification_type"];
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  is_read: boolean;
+  link_url: string | null;
+  created_at: string;
+}
+
+export async function getNotifications(): Promise<{
+  data: Notification[];
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: "Not authenticated" };
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  return { data: (data as Notification[]) ?? [], error: error?.message ?? null };
+}
+
+export async function getUnreadNotificationCount(): Promise<{
+  data: number;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: 0, error: "Not authenticated" };
+
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false);
+
+  return { data: count ?? 0, error: error?.message ?? null };
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<{
+  success: boolean;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", notificationId)
+    .eq("user_id", user.id);
+
+  revalidatePath("/dashboard");
+  return { success: !error, error: error?.message ?? null };
+}
+
+export async function markAllNotificationsAsRead(): Promise<{
+  success: boolean;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  const { error } = await supabase.rpc("mark_all_notifications_read");
+
+  revalidatePath("/dashboard");
+  return { success: !error, error: error?.message ?? null };
+}
+
+export async function deleteNotification(notificationId: string): Promise<{
+  success: boolean;
+  error: string | null;
+}> {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("id", notificationId)
+    .eq("user_id", user.id);
+
+  revalidatePath("/dashboard");
+  return { success: !error, error: error?.message ?? null };
+}

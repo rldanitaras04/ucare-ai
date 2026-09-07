@@ -1,4 +1,4 @@
-import type { UserRole } from "./auth";
+import type { UserRole, PatientPersona, Permission } from "./auth";
 
 export interface Role {
   id: string;
@@ -30,88 +30,86 @@ export interface RolePermission {
 }
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  super_admin: 0,
-  admin: 1,
-  clinic_admin: 2,
-  nurse: 3,
-  doctor: 3,
-  dentist: 3,
-  staff: 4,
-  clinic_staff: 4,
-  user: 5,
-  patient: 5,
+  superadmin: 0,
+  nurse: 1,
+  doctor: 2,
+  dentist: 2,
+  staff: 3,
+  patient: 4,
 } as const;
 
-export const DEFAULT_ROLE: UserRole = "user";
+export const DEFAULT_ROLE: UserRole = "patient";
 
-// ─── Clinic Role Constants ─────────────────────────────────────────────────
+export const PATIENT_PERSONAS: PatientPersona[] = [
+  "student",
+  "faculty",
+  "non_teaching_staff",
+];
 
-/** All clinic-specific role names seeded by migration 00008. */
-export const CLINIC_ROLES = [
-  "clinic_admin",
+export const ALL_ROLES: UserRole[] = [
+  "superadmin",
   "nurse",
-  "clinic_staff",
   "doctor",
   "dentist",
+  "staff",
   "patient",
-] as const;
+];
 
-export type ClinicRole = (typeof CLINIC_ROLES)[number];
+export const STAFF_ROLES: UserRole[] = [
+  "superadmin",
+  "nurse",
+  "doctor",
+  "dentist",
+  "staff",
+];
 
-/** Granular permission names for clinic operations. */
-export const CLINIC_PERMISSIONS = [
-  // Walk-ins
-  "walk_ins.view",
-  "walk_ins.create",
-  "walk_ins.update",
-  // Queue
-  "queue.view",
-  "queue.manage",
-  "queue.call",
-  // Triage
-  "triage.create",
-  "triage.view",
-  "triage.fallback_override",
-  // Staff duty
-  "staff_duty.view",
-  "staff_duty.manage",
-  // Clinical
-  "clinical.view",
-  "clinical.create",
-  // Dental
-  "dental.view",
-  "dental.create",
-  // Prescriptions
-  "prescriptions.create",
-  "prescriptions.view",
-  // Clearances
-  "clearances.create",
-  "clearances.view",
-  "clearances.approve",
-] as const;
+export const CLINICAL_ROLES: UserRole[] = [
+  "nurse",
+  "doctor",
+  "dentist",
+];
 
-export type ClinicPermission = (typeof CLINIC_PERMISSIONS)[number];
+export const MEDICAL_ROLES: UserRole[] = [
+  "superadmin",
+  "nurse",
+  "doctor",
+];
 
-/**
- * Role → Permission mapping for clinic operations.
- * Used for client-side permission checks (supplemented by RLS in production).
- */
-export const CLINIC_ROLE_PERMISSIONS: Record<ClinicRole, readonly ClinicPermission[]> = {
-  clinic_admin: CLINIC_PERMISSIONS, // all clinic permissions
-  nurse: [
-    "triage.create",
-    "triage.view",
+export const DENTAL_ROLES: UserRole[] = [
+  "superadmin",
+  "dentist",
+];
+
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  superadmin: [
+    "users.view",
+    "users.create",
+    "users.update",
+    "users.delete",
+    "roles.view",
+    "roles.manage",
+    "permissions.view",
+    "permissions.manage",
+    "audit_logs.view",
+    "settings.manage",
+    "system.monitor",
+    "reports.view",
+    "reports.export",
+    "inventory.view",
+    "inventory.manage",
+    "appointments.view",
+    "appointments.manage",
     "walk_ins.view",
-    "walk_ins.update",
     "queue.view",
+    "triage.view",
     "clinical.view",
-    "clinical.create",
+    "dental.view",
     "prescriptions.view",
     "clearances.view",
-    "clearances.create",
-    "staff_duty.view",
+    "certificates.view",
+    "provider_requests.view",
   ],
-  clinic_staff: [
+  nurse: [
     "walk_ins.view",
     "walk_ins.create",
     "walk_ins.update",
@@ -122,7 +120,18 @@ export const CLINIC_ROLE_PERMISSIONS: Record<ClinicRole, readonly ClinicPermissi
     "triage.view",
     "triage.fallback_override",
     "staff_duty.view",
+    "staff_duty.manage",
+    "clinical.view",
+    "clinical.create",
+    "prescriptions.view",
     "clearances.view",
+    "clearances.create",
+    "reports.view",
+    "inventory.view",
+    "certificates.view",
+    "certificates.create",
+    "appointments.view",
+    "appointments.create",
   ],
   doctor: [
     "walk_ins.view",
@@ -134,6 +143,11 @@ export const CLINIC_ROLE_PERMISSIONS: Record<ClinicRole, readonly ClinicPermissi
     "prescriptions.view",
     "clearances.view",
     "clearances.approve",
+    "certificates.view",
+    "certificates.create",
+    "provider_requests.view",
+    "provider_requests.create",
+    "appointments.view",
   ],
   dentist: [
     "walk_ins.view",
@@ -144,12 +158,41 @@ export const CLINIC_ROLE_PERMISSIONS: Record<ClinicRole, readonly ClinicPermissi
     "prescriptions.view",
     "clearances.view",
     "clearances.approve",
+    "certificates.view",
+    "certificates.create",
+    "provider_requests.view",
+    "provider_requests.create",
+    "appointments.view",
+  ],
+  staff: [
+    "walk_ins.view",
+    "walk_ins.create",
+    "walk_ins.update",
+    "queue.view",
+    "queue.manage",
+    "queue.call",
+    "staff_duty.view",
+    "clearances.view",
+    "appointments.view",
+    "appointments.create",
+    "appointments.manage",
   ],
   patient: [
-    "walk_ins.view",
     "queue.view",
-    "triage.view",
-    "clearances.create",
     "clearances.view",
+    "clearances.create",
+    "certificates.view",
+    "medical_records.view_own",
+    "dental_records.view_own",
+    "appointments.view",
+    "appointments.create",
   ],
 };
+
+export function roleHasPermission(role: UserRole, permission: Permission): boolean {
+  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
+}
+
+export function getRolePermissions(role: UserRole): Permission[] {
+  return ROLE_PERMISSIONS[role] ?? [];
+}

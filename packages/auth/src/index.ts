@@ -8,10 +8,14 @@ export {
 export {
   isRoleHigherOrEqual,
   isSuperAdmin,
-  isAdmin,
+  isNurse,
+  isClinical,
+  isMedical,
+  isDental,
   isStaff,
-  isUser,
+  isPatient,
   canAccessAdminPanel,
+  canAccessClinical,
 } from "./roles";
 
 export {
@@ -22,7 +26,9 @@ export {
   canPerformAction,
 } from "./guards";
 
-export { createAuthUser, parseUserRole } from "./session";
+export { createAuthUser, parseUserRole, parsePatientPersona } from "./session";
+
+export { sanitizeRole } from "./role-utils";
 
 export { logAuditEvent, AuditActions } from "./audit";
 export type { AuditLogEntry } from "./audit";

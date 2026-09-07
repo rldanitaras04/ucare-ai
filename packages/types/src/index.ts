@@ -1,6 +1,7 @@
 export type { Json, Database } from "./database";
 export type {
   UserRole,
+  PatientPersona,
   Permission,
   AuthUser,
   Session,
@@ -9,14 +10,18 @@ export type {
   Role,
   RolePermission,
   UserRoleAssignment,
-  ClinicRole,
-  ClinicPermission,
   PermissionRow,
 } from "./roles";
 export {
   ROLE_HIERARCHY,
   DEFAULT_ROLE,
-  CLINIC_ROLES,
-  CLINIC_PERMISSIONS,
-  CLINIC_ROLE_PERMISSIONS,
+  ALL_ROLES,
+  PATIENT_PERSONAS,
+  STAFF_ROLES,
+  CLINICAL_ROLES,
+  MEDICAL_ROLES,
+  DENTAL_ROLES,
+  ROLE_PERMISSIONS,
+  roleHasPermission,
+  getRolePermissions,
 } from "./roles";

@@ -47,7 +47,7 @@ export function requireAdminAccess(user: AuthUser | null): AuthorizationResult {
   const authResult = requireAuth(user);
   if (!authResult.authorized) return authResult;
 
-  if (!isRoleHigherOrEqual(user!.role, "admin")) {
+  if (!isRoleHigherOrEqual(user!.role, "nurse")) {
     return {
       authorized: false,
       reason: "Admin access required",

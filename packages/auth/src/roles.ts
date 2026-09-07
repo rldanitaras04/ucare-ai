@@ -8,21 +8,37 @@ export function isRoleHigherOrEqual(role: UserRole, requiredRole: UserRole): boo
 }
 
 export function isSuperAdmin(role: UserRole): boolean {
-  return role === "super_admin";
+  return role === "superadmin";
 }
 
-export function isAdmin(role: UserRole): boolean {
-  return role === "super_admin" || role === "admin";
+export function isNurse(role: UserRole): boolean {
+  return role === "nurse";
+}
+
+export function isClinical(role: UserRole): boolean {
+  return role === "nurse" || role === "doctor" || role === "dentist";
+}
+
+export function isMedical(role: UserRole): boolean {
+  return role === "nurse" || role === "doctor";
+}
+
+export function isDental(role: UserRole): boolean {
+  return role === "dentist";
 }
 
 export function isStaff(role: UserRole): boolean {
-  return role === "super_admin" || role === "admin" || role === "staff";
+  return role === "staff";
 }
 
-export function isUser(role: UserRole): boolean {
-  return role === "user";
+export function isPatient(role: UserRole): boolean {
+  return role === "patient";
 }
 
 export function canAccessAdminPanel(role: UserRole): boolean {
-  return ROLE_HIERARCHY[role] <= ROLE_HIERARCHY.admin;
+  return ROLE_HIERARCHY[role] <= ROLE_HIERARCHY.nurse;
+}
+
+export function canAccessClinical(role: UserRole): boolean {
+  return isClinical(role) || isSuperAdmin(role);
 }
