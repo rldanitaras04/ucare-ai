@@ -139,9 +139,7 @@ export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [userRole, setUserRole] = React.useState<UserRole>(
-    sanitizeRole(user.user_metadata?.role as string)
-  );
+  const [userRole, setUserRole] = React.useState<UserRole>("patient");
   const [userPersona] = React.useState<PatientPersona | undefined>(
     (user.user_metadata?.persona as PatientPersona) ?? undefined
   );

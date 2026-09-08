@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type { Database } from "@repo/types";
 
-const PROVIDER_ROLES = ["superadmin", "doctor", "dentist"];
+const PROVIDER_ROLES = ["superadmin", "doctor", "dentist"] as const;
 
 type EncounterStatus = Database["public"]["Enums"]["encounter_status"];
 
@@ -51,19 +52,11 @@ export async function getVisitForConsultation(visitId: string): Promise<{
   data: VisitWithTriage | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...PROVIDER_ROLES])) {
     return { data: null, error: "Insufficient permissions to view consultation data" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("walk_in_visits")
@@ -161,26 +154,19 @@ export async function getOrCreateEncounter(visitId: string): Promise<{
   data: EncounterData | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...PROVIDER_ROLES])) {
     return { data: null, error: "Insufficient permissions to create consultations" };
   }
+  const supabase = auth.supabase;
+  const userId = auth.user.id;
 
   // Check for existing active encounter
   const { data: existing } = await supabase
     .from("clinical_encounters")
     .select("*")
     .eq("visit_id", visitId)
-    .eq("provider_id", user.id)
+    .eq("provider_id", userId)
     .eq("status", "in_progress")
     .single();
 
@@ -207,7 +193,7 @@ export async function getOrCreateEncounter(visitId: string): Promise<{
     .insert({
       visit_id: visitId,
       patient_id: visit.patient_id,
-      provider_id: user.id,
+      provider_id: userId,
       encounter_type: encounterType,
       status: "in_progress",
     })
@@ -242,21 +228,12 @@ export async function saveSoapNotes(
   encounterId: string,
   soap: SoapNotes
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...PROVIDER_ROLES])) {
     return { success: false, error: "Insufficient permissions to save SOAP notes" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("clinical_encounters")
     .update({
       subjective: soap.subjective || null,
@@ -267,7 +244,7 @@ export async function saveSoapNotes(
       notes: soap.notes || null,
     })
     .eq("id", encounterId)
-    .eq("provider_id", user.id);
+    .eq("provider_id", auth.user.id);
 
   if (error) {
     return { success: false, error: error.message };
@@ -282,26 +259,17 @@ export async function completeEncounter(encounterId: string): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...PROVIDER_ROLES])) {
     return { success: false, error: "Insufficient permissions to complete encounters" };
   }
 
   // Get encounter to find visit_id
-  const { data: encounter } = await supabase
+  const { data: encounter } = await auth.supabase
     .from("clinical_encounters")
     .select("visit_id")
     .eq("id", encounterId)
-    .eq("provider_id", user.id)
+    .eq("provider_id", auth.user.id)
     .single();
 
   if (!encounter) {
@@ -309,7 +277,7 @@ export async function completeEncounter(encounterId: string): Promise<{
   }
 
   // Complete the encounter
-  const { error: encounterError } = await supabase
+  const { error: encounterError } = await auth.supabase
     .from("clinical_encounters")
     .update({
       status: "completed",
@@ -322,7 +290,7 @@ export async function completeEncounter(encounterId: string): Promise<{
   }
 
   // Update visit status to completed
-  const { error: visitError } = await supabase
+  const { error: visitError } = await auth.supabase
     .from("walk_in_visits")
     .update({ status: "completed" })
     .eq("id", encounter.visit_id);
@@ -332,7 +300,7 @@ export async function completeEncounter(encounterId: string): Promise<{
   }
 
   // Update queue entry status
-  await supabase
+  await auth.supabase
     .from("queue_entries")
     .update({ status: "served" })
     .eq("visit_id", encounter.visit_id);
@@ -348,16 +316,12 @@ export async function getVisitsForConsultation(): Promise<{
   data: VisitWithTriage[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PROVIDER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...PROVIDER_ROLES])) {
     return { data: [], error: "Insufficient permissions to view consultations" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("walk_in_visits")
     .select(`
       id,

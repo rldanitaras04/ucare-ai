@@ -7,12 +7,23 @@ export default async function DashboardPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const role = sanitizeRole(user?.user_metadata?.role as string);
+  let role: UserRole = "patient";
+  if (user) {
+    const { data: roleData } = await supabase
+      .from("user_roles" as never)
+      .select("roles(name)")
+      .eq("user_id" as never, user.id)
+      .maybeSingle();
+
+    const dbName = (roleData as { roles: { name: string } | null } | null)?.roles?.name;
+    role = sanitizeRole(dbName ?? (user.user_metadata?.role as string) ?? "patient") as UserRole;
+  }
+
   const roleLabel = role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   const today = new Date().toISOString().split("T")[0];
 
-  const [patientsResult, visitsResult, queueResult, activeQueueResult, prescriptionsResult, clearancesResult, certificatesResult, appointmentsResult] = await Promise.all([
+  const [patientsResult, visitsResult, queueResult, activeQueueResult, prescriptionsResult, clearancesResult, certificatesResult] = await Promise.all([
     supabase.from("patient_profiles").select("id", { count: "exact", head: true }),
     supabase.from("walk_in_visits").select("id", { count: "exact", head: true }).gte("visit_date", `${today}T00:00:00`).lte("visit_date", `${today}T23:59:59`),
     supabase.from("queue_entries").select("queue_number, status, priority").in("status", ["waiting", "called"]).order("created_at", { ascending: true }).limit(5),
@@ -20,7 +31,6 @@ export default async function DashboardPage() {
     supabase.from("prescriptions").select("id", { count: "exact", head: true }).eq("status", "draft"),
     supabase.from("health_clearances").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("certificates").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("status", "scheduled"),
   ]);
 
   const totalPatients = patientsResult.count ?? 0;
@@ -29,7 +39,6 @@ export default async function DashboardPage() {
   const pendingPrescriptions = prescriptionsResult.count ?? 0;
   const pendingClearances = clearancesResult.count ?? 0;
   const pendingCertificates = certificatesResult.count ?? 0;
-  const scheduledAppointments = appointmentsResult.count ?? 0;
   const queueEntries = queueResult.data ?? [];
 
   return (
@@ -42,7 +51,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Stat Cards ─────────────────────────────────────── */}
-      {renderStats(role, { totalPatients, todayVisits, activeQueue, pendingPrescriptions, pendingClearances, pendingCertificates, scheduledAppointments })}
+      {renderStats(role, { totalPatients, todayVisits, activeQueue, pendingPrescriptions, pendingClearances, pendingCertificates })}
 
       {/* ── Queue Overview (ops/clinical) ──────────────────── */}
       {role !== "patient" && queueEntries.length > 0 && (
@@ -87,14 +96,13 @@ function renderStats(role: UserRole, stats: {
   pendingPrescriptions: number;
   pendingClearances: number;
   pendingCertificates: number;
-  scheduledAppointments: number;
 }) {
   if (role === "patient") {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Scheduled Appointments" value={stats.scheduledAppointments} icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" color="blue" />
         <StatCard label="Pending Clearances" value={stats.pendingClearances} icon="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" color="amber" />
         <StatCard label="Active Queue" value={stats.activeQueue} icon="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" color="emerald" />
+        <StatCard label="Pending Certificates" value={stats.pendingCertificates} icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" color="blue" />
       </div>
     );
   }
@@ -165,7 +173,6 @@ function renderQuickLinks(role: UserRole) {
         <QuickLink href="/my-prescriptions" label="My Prescriptions" description="View your prescriptions" color="emerald" />
         <QuickLink href="/my-clearances" label="Health Clearances" description="View your clearances" color="amber" />
         <QuickLink href="/my-queue-status" label="Queue Status" description="Check your queue position" color="slate" />
-        <QuickLink href="/my-appointments" label="My Appointments" description="View scheduled appointments" color="blue" />
       </div>
     );
   }

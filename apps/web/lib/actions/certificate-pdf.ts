@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import { jsPDF } from "jspdf";
 
 interface CertificateData {
@@ -20,15 +20,11 @@ interface CertificateData {
 export async function generateCertificatePDF(
   certificateId: string
 ): Promise<{ data: Uint8Array | null; error: string | null; filename: string }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated", filename: "" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor", "dentist", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "doctor", "dentist", "staff"])) {
     return { data: null, error: "Insufficient permissions", filename: "" };
   }
+  const supabase = auth.supabase;
 
   const { data: cert, error: certError } = await supabase
     .from("certificates")

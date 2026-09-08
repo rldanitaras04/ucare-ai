@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type { Database } from "@repo/types";
 
-const DENTIST_ROLES = ["superadmin", "dentist"];
+const DENTIST_ROLES = ["superadmin", "dentist"] as const;
 
 type OdontogramCondition = Database["public"]["Enums"]["odontogram_condition"];
 type OdontogramSurface = Database["public"]["Enums"]["odontogram_surface"];
@@ -52,21 +53,12 @@ export async function getDentalVisit(visitId: string): Promise<{
   data: DentalVisitData | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { data: null, error: "Insufficient permissions to view dental visit data" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("walk_in_visits")
     .select(`
       id as visit_id,
@@ -141,26 +133,19 @@ export async function getOrCreateDentalEncounter(visitId: string): Promise<{
   data: DentalEncounterData | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { data: null, error: "Insufficient permissions to create dental encounters" };
   }
+  const supabase = auth.supabase;
+  const userId = auth.user.id;
 
   // Check for existing active encounter
   const { data: existing } = await supabase
     .from("dental_encounters")
     .select("*")
     .eq("visit_id", visitId)
-    .eq("dentist_id", user.id)
+    .eq("dentist_id", userId)
     .eq("status", "in_progress")
     .single();
 
@@ -185,7 +170,7 @@ export async function getOrCreateDentalEncounter(visitId: string): Promise<{
     .insert({
       visit_id: visitId,
       patient_id: visit.patient_id,
-      dentist_id: user.id,
+      dentist_id: userId,
       status: "in_progress",
     })
     .select("*")
@@ -210,21 +195,12 @@ export async function getOdontogramEntries(encounterId: string): Promise<{
   data: OdontogramEntryData[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: [], error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { data: [], error: "Insufficient permissions to view odontogram data" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("odontogram_entries")
     .select("*")
     .eq("dental_encounter_id", encounterId)
@@ -253,19 +229,11 @@ export interface SaveOdontogramData {
 export async function saveOdontogramEntries(
   data: SaveOdontogramData
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { success: false, error: "Insufficient permissions to save odontogram entries" };
   }
+  const supabase = auth.supabase;
 
   // Delete existing entries for this encounter
   const { error: deleteError } = await supabase
@@ -314,21 +282,12 @@ export interface SaveDentalFindings {
 export async function saveDentalFindings(
   findings: SaveDentalFindings
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { success: false, error: "Insufficient permissions to save dental findings" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("dental_encounters")
     .update({
       examination_notes: findings.examination_notes || null,
@@ -336,7 +295,7 @@ export async function saveDentalFindings(
       treatment_plan: findings.treatment_plan || null,
     })
     .eq("id", findings.encounter_id)
-    .eq("dentist_id", user.id);
+    .eq("dentist_id", auth.user.id);
 
   if (error) {
     return { success: false, error: error.message };
@@ -351,26 +310,18 @@ export async function completeDentalEncounter(encounterId: string): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { success: false, error: "Insufficient permissions to complete dental encounters" };
   }
+  const supabase = auth.supabase;
 
   // Get encounter to find visit_id
   const { data: encounter } = await supabase
     .from("dental_encounters")
     .select("visit_id")
     .eq("id", encounterId)
-    .eq("dentist_id", user.id)
+    .eq("dentist_id", auth.user.id)
     .single();
 
   if (!encounter) {
@@ -414,16 +365,12 @@ export async function getVisitsForDental(): Promise<{
   data: DentalVisitData[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !DENTIST_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...DENTIST_ROLES])) {
     return { data: [], error: "Insufficient permissions to view dental visits" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("walk_in_visits")
     .select(`
       id,

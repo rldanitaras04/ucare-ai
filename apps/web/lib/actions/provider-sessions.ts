@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type {
   ProviderSession,
   ProviderSessionWithProvider,
@@ -10,7 +10,7 @@ import type {
   ProviderSessionStatus,
 } from "@/lib/types/provider-sessions";
 
-const ADMIN_ROLES = ["superadmin", "nurse"];
+const ADMIN_ROLES = ["superadmin", "nurse"] as const;
 
 export type {
   ProviderSession,
@@ -24,19 +24,11 @@ export async function getProviderSessions(): Promise<{
   data: ProviderSessionWithProvider[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions to view provider sessions" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("provider_sessions")
@@ -66,19 +58,11 @@ export async function getProviders(): Promise<{
   data: Array<{ id: string; full_name: string | null; email: string; role: string }> | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions to view providers" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("profiles")
@@ -100,19 +84,11 @@ export async function createProviderSession(
   sessionDate: string,
   startTime: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...ADMIN_ROLES])) {
     return { success: false, error: "Insufficient permissions to create provider sessions" };
   }
+  const supabase = auth.supabase;
 
   const { error } = await supabase.from("provider_sessions").insert({
     provider_profile_id: providerProfileId,
@@ -135,19 +111,11 @@ export async function updateSessionStatus(
   sessionId: string,
   status: ProviderSessionStatus
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...ADMIN_ROLES])) {
     return { success: false, error: "Insufficient permissions to update session status" };
   }
+  const supabase = auth.supabase;
 
   const updateData: {
     status: ProviderSessionStatus;

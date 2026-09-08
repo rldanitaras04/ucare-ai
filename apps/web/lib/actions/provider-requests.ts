@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type { Database } from "@repo/types";
 
 type ProviderType = Database["public"]["Enums"]["provider_type"];
@@ -26,14 +26,11 @@ export async function getProviderRequests(): Promise<{
   data: ProviderRequest[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: [], error: "Insufficient permissions" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("provider_requests")
@@ -84,21 +81,18 @@ export async function createProviderRequest(request: {
   urgency?: RequestUrgency;
   reason?: string;
 }): Promise<{ data: ProviderRequest | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("provider_requests")
     .insert({
       patient_id: request.patient_id,
       visit_id: request.visit_id,
-      requested_by: user.id,
+      requested_by: auth.user.id,
       provider_type: request.provider_type,
       urgency: request.urgency ?? "normal",
       reason: request.reason ?? null,
@@ -114,14 +108,11 @@ export async function updateProviderRequestStatus(
   requestId: string,
   status: ProviderRequestStatus
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { success: false, error: "Insufficient permissions" };
   }
+  const supabase = auth.supabase;
 
   const { error } = await supabase
     .from("provider_requests")

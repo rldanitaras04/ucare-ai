@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
 const STAFF_ROLES = ["superadmin", "nurse", "doctor", "dentist", "staff"];
+const VIEWER_ROLES = ["superadmin", "nurse", "staff", "doctor", "dentist"];
 
 export interface PatientProfile {
   id: string;
@@ -45,21 +47,12 @@ export async function getPatients(): Promise<{
   data: PatientProfile[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to view patient directory" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("patient_profiles")
     .select("*")
     .order("created_at", { ascending: false });
@@ -74,17 +67,8 @@ export async function getPatients(): Promise<{
 export async function searchPatients(
   query: string
 ): Promise<{ data: PatientProfile[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to search patients" };
   }
 
@@ -93,7 +77,7 @@ export async function searchPatients(
     return { data: null, error: "Search query is required" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("patient_profiles")
     .select("*")
     .or(
@@ -111,21 +95,12 @@ export async function searchPatients(
 export async function getPatientById(
   patientId: string
 ): Promise<{ data: PatientWithVisits | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to view patient details" };
   }
 
-  const { data: patient, error } = await supabase
+  const { data: patient, error } = await auth.supabase
     .from("patient_profiles")
     .select("*")
     .eq("id", patientId)
@@ -135,7 +110,7 @@ export async function getPatientById(
     return { data: null, error: error?.message ?? "Patient not found" };
   }
 
-  const { data: visits } = await supabase
+  const { data: visits } = await auth.supabase
     .from("walk_in_visits")
     .select("id, service_type, status, reason_for_visit, visit_date, created_at")
     .eq("patient_id", patientId)
@@ -155,21 +130,12 @@ export async function updatePatientProfile(
   patientId: string,
   data: Partial<PatientProfile>
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, STAFF_ROLES)) {
     return { success: false, error: "Insufficient permissions to edit patient profiles" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("patient_profiles")
     .update({
       first_name: data.first_name,

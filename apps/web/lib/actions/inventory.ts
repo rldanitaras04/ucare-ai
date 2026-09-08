@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
 export interface InventoryItem {
   id: string;
@@ -36,20 +37,19 @@ export interface StockMovement {
   created_at: string;
 }
 
+const VIEWER_ROLES = ["superadmin", "nurse", "staff"] as const;
+const MANAGER_ROLES = ["superadmin", "nurse"] as const;
+
 export async function getInventoryItems(): Promise<{
   data: InventoryItem[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...VIEWER_ROLES])) {
     return { data: [], error: "Insufficient permissions to view inventory" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("inventory_items")
     .select("*")
     .eq("is_active", true)
@@ -65,16 +65,12 @@ export async function createInventoryItem(item: {
   description?: string;
   reorder_level?: number;
 }): Promise<{ data: InventoryItem | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...MANAGER_ROLES])) {
     return { data: null, error: "Insufficient permissions" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("inventory_items")
     .insert({
       name: item.name,
@@ -94,16 +90,12 @@ export async function getStockLots(itemId: string): Promise<{
   data: StockLot[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...VIEWER_ROLES])) {
     return { data: [], error: "Insufficient permissions to view stock lots" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("stock_lots")
     .select("*")
     .eq("item_id", itemId)
@@ -119,23 +111,19 @@ export async function recordStockMovement(movement: {
   quantity: number;
   notes?: string;
 }): Promise<{ data: StockMovement | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...VIEWER_ROLES])) {
     return { data: null, error: "Insufficient permissions" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("stock_movements")
     .insert({
       item_id: movement.item_id,
       lot_id: movement.lot_id ?? null,
       movement_type: movement.movement_type,
       quantity: movement.quantity,
-      performed_by: user.id,
+      performed_by: auth.user.id,
       notes: movement.notes ?? null,
     })
     .select()

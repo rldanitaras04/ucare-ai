@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
 export interface MedicationAdministration {
   id: string;
@@ -26,14 +26,11 @@ export async function getMedicationAdministrations(patientId: string): Promise<{
   data: MedicationAdministration[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "doctor"])) {
     return { data: [], error: "Insufficient permissions to view medication administrations" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("medication_administrations")
@@ -59,14 +56,11 @@ export async function recordMedicationAdministration(admin: {
   notes?: string;
   adverse_reaction?: string;
 }): Promise<{ data: MedicationAdministration | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse"])) {
     return { data: null, error: "Insufficient permissions" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("medication_administrations")
@@ -74,7 +68,7 @@ export async function recordMedicationAdministration(admin: {
       patient_id: admin.patient_id,
       encounter_id: admin.encounter_id ?? null,
       prescription_id: admin.prescription_id ?? null,
-      administered_by: user.id,
+      administered_by: auth.user.id,
       medication_name: admin.medication_name,
       medication_strength: admin.medication_strength ?? null,
       dose: admin.dose,

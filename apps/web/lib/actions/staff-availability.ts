@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type {
   DutyStatus,
   StaffAvailabilityRecord,
@@ -9,7 +9,7 @@ import type {
   StaffAvailabilityWithMember,
 } from "@/lib/types/staff-availability";
 
-const ADMIN_ROLES = ["superadmin", "nurse"];
+const ADMIN_ROLES = ["superadmin", "nurse"] as const;
 
 export type {
   DutyStatus,
@@ -22,19 +22,11 @@ export async function getStaffAvailability(): Promise<{
   data: StaffAvailabilityWithMember[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions to view staff availability" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("staff_availability")
@@ -64,21 +56,12 @@ export async function getAvailableStaff(): Promise<{
   data: StaffMember[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions to view available staff" };
   }
+  const supabase = auth.supabase;
 
-  // Get profiles that are clinic staff (nurse, doctor, dentist, staff)
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, email, role")
@@ -99,19 +82,11 @@ export async function recordDutyStatus(
   startTime?: string,
   endTime?: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...ADMIN_ROLES])) {
     return { success: false, error: "Insufficient permissions to record duty status" };
   }
+  const supabase = auth.supabase;
 
   const { error } = await supabase.from("staff_availability").insert({
     staff_profile_id: staffProfileId,
@@ -119,7 +94,7 @@ export async function recordDutyStatus(
     notes: notes?.trim() || null,
     start_time: startTime || null,
     end_time: endTime || null,
-    authorized_by: user.id,
+    authorized_by: auth.user.id,
   });
 
   if (error) {
@@ -135,19 +110,11 @@ export async function updateDutyStatus(
   dutyStatus: DutyStatus,
   notes?: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...ADMIN_ROLES])) {
     return { success: false, error: "Insufficient permissions to update duty status" };
   }
+  const supabase = auth.supabase;
 
   const { error } = await supabase
     .from("staff_availability")
@@ -169,21 +136,12 @@ export async function getCurrentAvailability(): Promise<{
   data: Record<string, DutyStatus> | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions to view current availability" };
   }
+  const supabase = auth.supabase;
 
-  // Get the latest availability record for each staff member
   const { data: recent, error } = await supabase
     .from("staff_availability")
     .select("staff_profile_id, duty_status")

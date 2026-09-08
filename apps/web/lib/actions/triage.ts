@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type { Database } from "@repo/types";
 
-const TRIAGE_ROLES = ["superadmin", "nurse", "doctor"];
+const TRIAGE_ROLES = ["superadmin", "nurse", "doctor"] as const;
+const VIEWER_ROLES = ["superadmin", "nurse", "staff", "doctor", "dentist"] as const;
 
 type PriorityLevel = Database["public"]["Enums"]["priority_level"];
 type DutyStatus = Database["public"]["Enums"]["duty_status"];
@@ -104,21 +106,12 @@ export async function getVisitDetails(visitId: string): Promise<{
   data: VisitWithPatient | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...VIEWER_ROLES])) {
     return { data: null, error: "Insufficient permissions to view visit details" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("walk_in_visits")
     .select(`
       id as visit_id,
@@ -192,24 +185,16 @@ export async function getVisitDetails(visitId: string): Promise<{
 export async function saveTriageAssessment(
   assessment: TriageAssessmentData
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !TRIAGE_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...TRIAGE_ROLES])) {
     return { success: false, error: "Insufficient permissions to perform triage" };
   }
+  const supabase = auth.supabase;
 
   // 1. Insert triage record
   const { error: triageError } = await supabase.from("triage_records").insert({
     visit_id: assessment.visit_id,
-    triaged_by: user.id,
+    triaged_by: auth.user.id,
     is_fallback: assessment.is_fallback,
     fallback_reason: assessment.fallback_reason,
     priority: assessment.priority,
@@ -260,16 +245,12 @@ export async function getVisitsForTriage(): Promise<{
   data: VisitWithPatient[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...VIEWER_ROLES])) {
     return { data: [], error: "Insufficient permissions to view triage visits" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("walk_in_visits")
     .select(`
       id,

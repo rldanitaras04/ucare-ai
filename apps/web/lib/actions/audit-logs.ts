@@ -1,9 +1,10 @@
 "use server";
 
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type { Json } from "@repo/types";
 
-const ADMIN_ROLES = ["superadmin", "nurse"];
+const ADMIN_ROLES = ["superadmin", "nurse"] as const;
 
 export interface AuditLog {
   id: string;
@@ -29,19 +30,12 @@ export async function getAuditLogs(
   limit = 50,
   offset = 0
 ): Promise<{ data: AuditLog[] | null; error: string | null; count: number | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated", count: 0 };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !ADMIN_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...ADMIN_ROLES])) {
     return { data: null, error: "Insufficient permissions to view audit logs", count: 0 };
   }
 
-  let query = supabase
+  let query = auth.supabase
     .from("audit_logs")
     .select("*", { count: "exact" });
 
@@ -73,19 +67,12 @@ export async function getAuditLogs(
 }
 
 export async function getAuditLogById(logId: string): Promise<{ data: AuditLog | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...ADMIN_ROLES])) {
     return { data: null, error: "Insufficient permissions to view audit log details" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("audit_logs")
     .select("*")
     .eq("id", logId)

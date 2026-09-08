@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
 export interface VitalSign {
   id: string;
@@ -48,14 +48,11 @@ export async function getVitalSigns(encounterId: string): Promise<{
   data: VitalSign[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "doctor"])) {
     return { data: [], error: "Insufficient permissions to view vital signs" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("vital_signs")
@@ -80,21 +77,18 @@ export async function recordVitalSigns(vitals: {
   height_cm?: number;
   notes?: string;
 }): Promise<{ data: VitalSign | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "doctor"])) {
     return { data: null, error: "Insufficient permissions to record vital signs" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("vital_signs")
     .insert({
       encounter_id: vitals.encounter_id,
       patient_id: vitals.patient_id,
-      recorded_by: user.id,
+      recorded_by: auth.user.id,
       temperature_c: vitals.temperature_c ?? null,
       systolic_bp: vitals.systolic_bp ?? null,
       diastolic_bp: vitals.diastolic_bp ?? null,
@@ -117,14 +111,11 @@ export async function getNursingAssessments(encounterId: string): Promise<{
   data: NursingAssessment[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "doctor"])) {
     return { data: [], error: "Insufficient permissions to view nursing assessments" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("nursing_assessments")
@@ -154,21 +145,18 @@ export async function saveNursingAssessment(assessment: {
   disposition?: string;
   priority?: string;
 }): Promise<{ data: NursingAssessment | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse"])) {
     return { data: null, error: "Insufficient permissions" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("nursing_assessments")
     .insert({
       encounter_id: assessment.encounter_id,
       patient_id: assessment.patient_id,
-      assessed_by: user.id,
+      assessed_by: auth.user.id,
       assessment_type: assessment.assessment_type ?? "initial",
       chief_complaint: assessment.chief_complaint ?? null,
       symptoms: assessment.symptoms ?? null,

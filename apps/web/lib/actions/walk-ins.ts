@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 import { logAuditEvent, AuditActions } from "@repo/auth";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type { Database } from "@repo/types";
 
-const STAFF_ROLES = ["superadmin", "nurse", "doctor", "dentist", "staff"];
+const STAFF_ROLES = ["superadmin", "nurse", "doctor", "dentist", "staff"] as const;
 
 type ServiceType = Database["public"]["Enums"]["service_type"];
 
@@ -93,17 +94,8 @@ function generateQueueNumber(service: ServiceType, sequence: number): string {
 export async function searchPatientByUniversityId(
   query: string
 ): Promise<{ data: PatientProfile | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { data: null, error: "Insufficient permissions to search patients" };
   }
 
@@ -112,7 +104,7 @@ export async function searchPatientByUniversityId(
     return { data: null, error: "Search query is required" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("patient_profiles")
     .select("*")
     .or(`university_id.eq.${trimmed},student_employee_no.eq.${trimmed}`)
@@ -128,19 +120,11 @@ export async function searchPatientByUniversityId(
 export async function registerWalkIn(
   formData: WalkInFormData
 ): Promise<{ data: TicketData | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { data: null, error: "Insufficient permissions to register walk-ins" };
   }
+  const supabase = auth.supabase;
 
   // 1. Find or create patient profile
   let patientId: string;
@@ -261,17 +245,8 @@ export async function getLiveQueue(): Promise<{
   data: QueueEntry[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: [], error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { data: [], error: "Insufficient permissions to view queue" };
   }
 
@@ -284,7 +259,7 @@ export async function getLiveQueue(): Promise<{
     END
   `;
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("queue_entries")
     .select("*")
     .in("status", ["waiting", "called", "in_session"])

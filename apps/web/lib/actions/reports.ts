@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
 export interface ReportMetrics {
   totalPatients: number;
@@ -18,18 +19,17 @@ export interface ReportMetrics {
   topDiagnoses: Array<{ code: string; count: number }>;
 }
 
+const REPORT_ROLES = ["superadmin", "nurse"] as const;
+
 export async function getReportMetrics(dateRange?: {
   start: string;
   end: string;
 }): Promise<{ data: ReportMetrics | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...REPORT_ROLES])) {
     return { data: null, error: "Insufficient permissions" };
   }
+  const supabase = auth.supabase;
 
   const today = new Date().toISOString().split("T")[0];
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];

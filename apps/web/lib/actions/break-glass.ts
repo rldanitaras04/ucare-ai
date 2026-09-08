@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
 export interface BreakGlassLog {
   id: string;
@@ -12,16 +13,15 @@ export interface BreakGlassLog {
   notified: boolean;
 }
 
+const RECORD_ROLES = ["superadmin", "nurse", "doctor", "dentist"] as const;
+const VIEWER_ROLES = ["superadmin", "nurse"] as const;
+
 export async function recordBreakGlassAccess(params: {
   patient_id: string;
   reason: string;
 }): Promise<{ data: string | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...RECORD_ROLES])) {
     return { data: null, error: "Insufficient permissions for break-glass access" };
   }
 
@@ -29,7 +29,7 @@ export async function recordBreakGlassAccess(params: {
     return { data: null, error: "A detailed justification reason is required (minimum 10 characters)" };
   }
 
-  const { data, error } = await supabase.rpc("record_break_glass_access", {
+  const { data, error } = await auth.supabase.rpc("record_break_glass_access", {
     p_patient_id: params.patient_id,
     p_reason: params.reason.trim(),
   });
@@ -41,16 +41,12 @@ export async function getBreakGlassLogs(): Promise<{
   data: BreakGlassLog[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...VIEWER_ROLES])) {
     return { data: [], error: "Insufficient permissions" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("break_glass_audit_logs")
     .select("*")
     .order("accessed_at", { ascending: false });
@@ -62,16 +58,12 @@ export async function getBreakGlassLogsForPatient(patientId: string): Promise<{
   data: BreakGlassLog[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...RECORD_ROLES])) {
     return { data: [], error: "Insufficient permissions" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("break_glass_audit_logs")
     .select("*")
     .eq("patient_id", patientId)

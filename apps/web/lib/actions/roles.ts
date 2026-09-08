@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, isSuperAdmin } from "@/lib/auth";
 import { logAuditEvent, AuditActions } from "@repo/auth";
 
 export interface Role {
@@ -21,29 +21,12 @@ export interface Permission {
   created_at: string;
 }
 
-const ROLE_MUTATION_ROLES = ["superadmin"] as const;
-
-type CallerRole = string | undefined;
-
-function isSuperAdmin(callerRole: CallerRole): boolean {
-  return callerRole === "superadmin";
-}
-
-function hasRoleManagementAccess(callerRole: CallerRole): boolean {
-  return !!callerRole && ROLE_MUTATION_ROLES.includes(callerRole as typeof ROLE_MUTATION_ROLES[number]);
-}
-
 export async function getRoles(): Promise<{ data: Role[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to view roles" };
   }
+  const supabase = auth.supabase;
 
   const { data: roles, error } = await supabase
     .from("roles")
@@ -58,16 +41,11 @@ export async function getRoles(): Promise<{ data: Role[] | null; error: string |
 }
 
 export async function getPermissions(): Promise<{ data: Permission[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to view permissions" };
   }
+  const supabase = auth.supabase;
 
   const { data: permissions, error } = await supabase
     .from("permissions")
@@ -83,16 +61,11 @@ export async function getPermissions(): Promise<{ data: Permission[] | null; err
 }
 
 export async function getRolePermissions(roleId: string): Promise<{ data: string[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to view role permissions" };
   }
+  const supabase = auth.supabase;
 
   const { data: rolePermissions, error } = await supabase
     .from("role_permissions")
@@ -107,16 +80,11 @@ export async function getRolePermissions(roleId: string): Promise<{ data: string
 }
 
 export async function createRole(data: { name: string; description?: string }): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { success: false, error: "Only super administrators can create roles" };
   }
+  const supabase = auth.supabase;
 
   if (!data.name || data.name.trim().length === 0) {
     return { success: false, error: "Role name is required" };
@@ -141,16 +109,11 @@ export async function createRole(data: { name: string; description?: string }): 
 }
 
 export async function updateRole(roleId: string, data: { name?: string; description?: string }): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  if (!hasRoleManagementAccess(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { success: false, error: "Insufficient permissions to modify roles" };
   }
+  const supabase = auth.supabase;
 
   if (data.name !== undefined && data.name.trim().length === 0) {
     return { success: false, error: "Role name cannot be empty" };
@@ -183,16 +146,11 @@ export async function updateRole(roleId: string, data: { name?: string; descript
 }
 
 export async function assignPermissionToRole(roleId: string, permissionId: string): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { success: false, error: "Only super administrators can assign permissions" };
   }
+  const supabase = auth.supabase;
 
   const { error } = await supabase
     .from("role_permissions")
@@ -213,16 +171,11 @@ export async function assignPermissionToRole(roleId: string, permissionId: strin
 }
 
 export async function removePermissionFromRole(roleId: string, permissionId: string): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  if (!isSuperAdmin(user.user_metadata?.role as string | undefined)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { success: false, error: "Only super administrators can revoke permissions" };
   }
+  const supabase = auth.supabase;
 
   const { error } = await supabase
     .from("role_permissions")

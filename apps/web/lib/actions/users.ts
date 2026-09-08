@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
 import { logAuditEvent, AuditActions } from "@repo/auth";
+import { getAuthContext, hasRole, isSuperAdmin } from "@/lib/auth";
 
 export interface UserWithProfile {
   id: string;
@@ -16,19 +17,12 @@ export interface UserWithProfile {
 }
 
 export async function getUsers(): Promise<{ data: UserWithProfile[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to view users" };
   }
 
-  const { data: profiles, error } = await supabase
+  const { data: profiles, error } = await auth.supabase
     .from("profiles")
     .select("*")
     .order("created_at", { ascending: false });
@@ -37,7 +31,7 @@ export async function getUsers(): Promise<{ data: UserWithProfile[] | null; erro
     return { data: null, error: error.message };
   }
 
-  const { data: userRoles } = await supabase
+  const { data: userRoles } = await auth.supabase
     .from("user_roles")
     .select("user_id, roles(name)");
 
@@ -58,19 +52,12 @@ export async function getUsers(): Promise<{ data: UserWithProfile[] | null; erro
 }
 
 export async function getUserById(userId: string): Promise<{ data: UserWithProfile | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to view user details" };
   }
 
-  const { data: profile, error } = await supabase
+  const { data: profile, error } = await auth.supabase
     .from("profiles")
     .select("*")
     .eq("id", userId)
@@ -80,7 +67,7 @@ export async function getUserById(userId: string): Promise<{ data: UserWithProfi
     return { data: null, error: error.message };
   }
 
-  const { data: userRoles } = await supabase
+  const { data: userRoles } = await auth.supabase
     .from("user_roles")
     .select("roles(name)")
     .eq("user_id", userId);
@@ -93,23 +80,16 @@ export async function getUserById(userId: string): Promise<{ data: UserWithProfi
 }
 
 export async function updateUserRole(userId: string, newRole: string): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { success: false, error: "Insufficient permissions to change user roles" };
   }
 
-  if (userId === user.id) {
+  if (userId === auth.user.id) {
     return { success: false, error: "You cannot change your own role" };
   }
 
-  const { data: roleRecord, error: roleError } = await supabase
+  const { data: roleRecord, error: roleError } = await auth.supabase
     .from("roles")
     .select("id")
     .eq("name", newRole)
@@ -119,7 +99,7 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     return { success: false, error: `Invalid role: ${newRole}` };
   }
 
-  const { error: profileError } = await supabase
+  const { error: profileError } = await auth.supabase
     .from("profiles")
     .update({ role: newRole, updated_at: new Date().toISOString() })
     .eq("id", userId);
@@ -128,7 +108,7 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     return { success: false, error: profileError.message };
   }
 
-  const { error: deleteError } = await supabase
+  const { error: deleteError } = await auth.supabase
     .from("user_roles")
     .delete()
     .eq("user_id", userId);
@@ -137,7 +117,7 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     return { success: false, error: deleteError.message };
   }
 
-  const { error: insertError } = await supabase
+  const { error: insertError } = await auth.supabase
     .from("user_roles")
     .insert({ user_id: userId, role_id: roleRecord.id });
 
@@ -145,7 +125,7 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
     return { success: false, error: insertError.message };
   }
 
-  await logAuditEvent(supabase, {
+  await logAuditEvent(auth.supabase, {
     action: AuditActions.USER_ROLE_CHANGED,
     resource: "profiles",
     resource_id: userId,
@@ -157,23 +137,16 @@ export async function updateUserRole(userId: string, newRole: string): Promise<{
 }
 
 export async function toggleUserRole(userId: string, roleName: string): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { success: false, error: "Insufficient permissions to change user roles" };
   }
 
-  if (userId === user.id) {
+  if (userId === auth.user.id) {
     return { success: false, error: "You cannot change your own roles" };
   }
 
-  const { data: roleRecord, error: roleError } = await supabase
+  const { data: roleRecord, error: roleError } = await auth.supabase
     .from("roles")
     .select("id")
     .eq("name", roleName)
@@ -183,7 +156,7 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
     return { success: false, error: `Invalid role: ${roleName}` };
   }
 
-  const { data: existing } = await supabase
+  const { data: existing } = await auth.supabase
     .from("user_roles")
     .select("user_id, role_id")
     .eq("user_id", userId)
@@ -191,7 +164,7 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
     .maybeSingle();
 
   if (existing) {
-    const { count } = await supabase
+    const { count } = await auth.supabase
       .from("user_roles")
       .select("user_id", { count: "exact", head: true })
       .eq("user_id", userId);
@@ -200,7 +173,7 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
       return { success: false, error: "Cannot remove the last role. User must have at least one role." };
     }
 
-    const { error } = await supabase
+    const { error } = await auth.supabase
       .from("user_roles")
       .delete()
       .eq("user_id", userId)
@@ -210,7 +183,7 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
       return { success: false, error: error.message };
     }
   } else {
-    const { error } = await supabase
+    const { error } = await auth.supabase
       .from("user_roles")
       .insert({ user_id: userId, role_id: roleRecord.id });
 
@@ -219,7 +192,7 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
     }
   }
 
-  const { data: currentRoles } = await supabase
+  const { data: currentRoles } = await auth.supabase
     .from("user_roles")
     .select("roles(name)")
     .eq("user_id", userId);
@@ -229,13 +202,13 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
     .filter(Boolean) as string[];
 
   if (roleNames.length > 0) {
-    await supabase
+    await auth.supabase
       .from("profiles")
       .update({ role: roleNames[0], updated_at: new Date().toISOString() })
       .eq("id", userId);
   }
 
-  await logAuditEvent(supabase, {
+  await logAuditEvent(auth.supabase, {
     action: AuditActions.USER_ROLE_CHANGED,
     resource: "profiles",
     resource_id: userId,
@@ -247,16 +220,9 @@ export async function toggleUserRole(userId: string, roleName: string): Promise<
 }
 
 export async function updateUserProfile(userId: string, data: { full_name?: string }): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  const isOwnProfile = userId === user.id;
-  const hasAdminAccess = callerRole && ["superadmin"].includes(callerRole);
+  const auth = await getAuthContext();
+  const isOwnProfile = userId === auth.user.id;
+  const hasAdminAccess = isSuperAdmin(auth);
 
   if (!isOwnProfile && !hasAdminAccess) {
     return { success: false, error: "You can only edit your own profile" };
@@ -267,7 +233,7 @@ export async function updateUserProfile(userId: string, data: { full_name?: stri
     allowedFields.full_name = data.full_name;
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("profiles")
     .update({ ...allowedFields, updated_at: new Date().toISOString() })
     .eq("id", userId);
@@ -276,7 +242,7 @@ export async function updateUserProfile(userId: string, data: { full_name?: stri
     return { success: false, error: error.message };
   }
 
-  await logAuditEvent(supabase, {
+  await logAuditEvent(auth.supabase, {
     action: AuditActions.USER_UPDATED,
     resource: "profiles",
     resource_id: userId,
@@ -288,19 +254,12 @@ export async function updateUserProfile(userId: string, data: { full_name?: stri
 }
 
 export async function searchUsers(query: string): Promise<{ data: UserWithProfile[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to search users" };
   }
 
-  const { data: profiles, error } = await supabase
+  const { data: profiles, error } = await auth.supabase
     .from("profiles")
     .select("*")
     .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
@@ -310,7 +269,7 @@ export async function searchUsers(query: string): Promise<{ data: UserWithProfil
     return { data: null, error: error.message };
   }
 
-  const { data: userRoles } = await supabase
+  const { data: userRoles } = await auth.supabase
     .from("user_roles")
     .select("user_id, roles(name)");
 
@@ -331,19 +290,12 @@ export async function searchUsers(query: string): Promise<{ data: UserWithProfil
 }
 
 export async function getAllRoles(): Promise<{ data: Array<{ id: string; name: string; description: string | null }> | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!isSuperAdmin(auth)) {
     return { data: null, error: "Insufficient permissions to view roles" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("roles")
     .select("id, name, description")
     .order("name");

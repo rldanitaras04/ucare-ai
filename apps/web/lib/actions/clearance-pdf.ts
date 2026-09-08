@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import { jsPDF } from "jspdf";
 
 interface ClearanceData {
@@ -21,15 +21,11 @@ interface ClearanceData {
 export async function generateClearancePDF(
   clearanceId: string
 ): Promise<{ data: Uint8Array | null; error: string | null; filename: string }> {
-  const supabase = await createServerClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated", filename: "" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, ["superadmin", "nurse", "staff", "doctor", "dentist"])) {
     return { data: null, error: "Insufficient permissions", filename: "" };
   }
+  const supabase = auth.supabase;
 
   const { data: clearance, error: clrError } = await supabase
     .from("health_clearances")

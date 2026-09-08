@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import type {
   Prescription,
   PrescriptionWithDetails,
@@ -12,6 +13,7 @@ import type {
 } from "@/lib/types/prescriptions";
 
 const PRESCRIBER_ROLES = ["superadmin", "doctor", "dentist"];
+const VIEWER_ROLES = ["superadmin", "doctor", "dentist", "nurse"];
 
 export type {
   Prescription,
@@ -26,19 +28,11 @@ export async function getPrescriptions(): Promise<{
   data: PrescriptionWithDetails[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "doctor", "dentist", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to view prescriptions" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("prescriptions")
@@ -71,21 +65,12 @@ export async function getPrescriptions(): Promise<{
 export async function getPrescriptionsByPatient(
   patientId: string
 ): Promise<{ data: Prescription[] | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "doctor", "dentist", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to view prescriptions" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("prescriptions")
     .select("*")
     .eq("patient_id", patientId)
@@ -112,22 +97,23 @@ export async function createPrescription(prescription: {
   quantity?: number;
   instructions?: string;
 }): Promise<{ data: Prescription | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PRESCRIBER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, PRESCRIBER_ROLES)) {
     return { data: null, error: "Insufficient permissions to create prescriptions" };
   }
 
+  // Validate patient exists
+  const { data: patient } = await auth.supabase
+    .from("patient_profiles")
+    .select("id")
+    .eq("id", prescription.patient_id)
+    .maybeSingle();
+  if (!patient) {
+    return { data: null, error: "Invalid patient ID" };
+  }
+
   // Generate prescription number
-  const { data: numberData, error: numberError } = await supabase.rpc(
+  const { data: numberData, error: numberError } = await auth.supabase.rpc(
     "generate_prescription_number"
   );
 
@@ -135,13 +121,13 @@ export async function createPrescription(prescription: {
     return { data: null, error: numberError?.message ?? "Failed to generate prescription number" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("prescriptions")
     .insert({
       prescription_number: numberData as string,
       patient_id: prescription.patient_id,
       encounter_id: prescription.encounter_id || null,
-      prescriber_id: user.id,
+      prescriber_id: auth.user.id,
       prescription_type: prescription.prescription_type,
       medication_name: prescription.medication_name,
       medication_strength: prescription.medication_strength || null,
@@ -170,17 +156,8 @@ export async function updatePrescriptionStatus(
   status: PrescriptionStatus,
   cancellationReason?: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PRESCRIBER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, PRESCRIBER_ROLES)) {
     return { success: false, error: "Insufficient permissions to update prescription status" };
   }
 
@@ -196,7 +173,7 @@ export async function updatePrescriptionStatus(
 
   if (status === "signed") {
     updateData.signed_at = new Date().toISOString();
-    updateData.signed_by = user.id;
+    updateData.signed_by = auth.user.id;
   } else if (status === "issued") {
     updateData.date_issued = new Date().toISOString();
   } else if (status === "dispensed") {
@@ -207,7 +184,7 @@ export async function updatePrescriptionStatus(
     updateData.cancellation_reason = cancellationReason || null;
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("prescriptions")
     .update(updateData)
     .eq("id", prescriptionId);
@@ -223,22 +200,13 @@ export async function updatePrescriptionStatus(
 export async function deletePrescription(
   prescriptionId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !PRESCRIBER_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, PRESCRIBER_ROLES)) {
     return { success: false, error: "Insufficient permissions to delete prescriptions" };
   }
 
   // Only allow deleting draft prescriptions
-  const { data: prescription } = await supabase
+  const { data: prescription } = await auth.supabase
     .from("prescriptions")
     .select("status")
     .eq("id", prescriptionId)
@@ -248,7 +216,7 @@ export async function deletePrescription(
     return { success: false, error: "Only draft prescriptions can be deleted" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("prescriptions")
     .delete()
     .eq("id", prescriptionId);

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import { createDocumentVerification } from "./verification";
 import type {
   ClearanceType,
@@ -11,6 +12,8 @@ import type {
 } from "@/lib/types/health-clearances";
 
 const CLEARANCE_ROLES = ["superadmin", "nurse", "doctor", "dentist"];
+const VIEWER_ROLES = ["superadmin", "nurse", "staff"];
+const APPROVER_ROLES = ["superadmin", "nurse"];
 
 function generateVerificationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -28,19 +31,11 @@ export async function getHealthClearances(): Promise<{
   data: HealthClearanceWithDetails[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to view health clearances" };
   }
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from("health_clearances")
@@ -76,21 +71,12 @@ export async function getHealthClearances(): Promise<{
 export async function getHealthClearanceById(
   clearanceId: string
 ): Promise<{ data: HealthClearanceWithDetails | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: null, error: "Insufficient permissions to view clearance" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("health_clearances")
     .select(`
       *,
@@ -130,22 +116,23 @@ export async function createHealthClearance(clearance: {
   valid_until?: string;
   requirements?: Array<{ name: string; completed: boolean; date: string | null }>;
 }): Promise<{ data: HealthClearance | null; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !CLEARANCE_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, CLEARANCE_ROLES)) {
     return { data: null, error: "Insufficient permissions to create health clearances" };
   }
 
+  // Validate patient exists
+  const { data: patient } = await auth.supabase
+    .from("patient_profiles")
+    .select("id")
+    .eq("id", clearance.patient_id)
+    .maybeSingle();
+  if (!patient) {
+    return { data: null, error: "Invalid patient ID" };
+  }
+
   // Generate clearance number
-  const { data: numberData, error: numberError } = await supabase.rpc(
+  const { data: numberData, error: numberError } = await auth.supabase.rpc(
     "generate_clearance_number"
   );
 
@@ -153,7 +140,7 @@ export async function createHealthClearance(clearance: {
     return { data: null, error: numberError?.message ?? "Failed to generate clearance number" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("health_clearances")
     .insert({
       clearance_number: numberData as string,
@@ -185,17 +172,8 @@ export async function updateClearanceStatus(
     valid_until?: string;
   }
 ): Promise<{ success: boolean; error: string | null; verification_code?: string }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, APPROVER_ROLES)) {
     return { success: false, error: "Insufficient permissions to update clearance status" };
   }
 
@@ -210,9 +188,9 @@ export async function updateClearanceStatus(
   } = { status };
 
   if (status === "in_review") {
-    updateData.assessed_by = user.id;
+    updateData.assessed_by = auth.user.id;
   } else if (status === "approved") {
-    updateData.approved_by = user.id;
+    updateData.approved_by = auth.user.id;
     updateData.approval_date = new Date().toISOString();
   } else if (status === "denied") {
     updateData.denial_reason = options?.denial_reason || null;
@@ -226,7 +204,7 @@ export async function updateClearanceStatus(
     updateData.valid_until = options.valid_until;
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("health_clearances")
     .update(updateData)
     .eq("id", clearanceId);
@@ -255,22 +233,13 @@ export async function updateRequirement(
   requirementIndex: number,
   completed: boolean
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { success: false, error: "Insufficient permissions to update requirements" };
   }
 
   // Get current requirements
-  const { data: clearance } = await supabase
+  const { data: clearance } = await auth.supabase
     .from("health_clearances")
     .select("requirements")
     .eq("id", clearanceId)
@@ -296,7 +265,7 @@ export async function updateRequirement(
     date: completed ? new Date().toISOString().split("T")[0] : null,
   };
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("health_clearances")
     .update({ requirements })
     .eq("id", clearanceId);

@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 
-const STAFF_ROLES = ["superadmin", "nurse", "doctor", "dentist", "staff"];
+const STAFF_ROLES = ["superadmin", "nurse", "doctor", "dentist", "staff"] as const;
 
 export type QueueStatus = "waiting" | "called" | "in_session" | "served" | "skipped";
 export type PriorityLevel = "emergency" | "urgent" | "priority" | "normal";
@@ -37,21 +38,12 @@ export async function getQueueWithPatients(): Promise<{
   data: QueueEntryWithVisit[] | null;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { data: null, error: "Insufficient permissions to view queue" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("queue_entries")
     .select(`
       *,
@@ -82,21 +74,12 @@ export async function callPatient(
   queueEntryId: string,
   roomStation?: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { success: false, error: "Insufficient permissions to call patients" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("queue_entries")
     .update({
       status: "called",
@@ -118,21 +101,12 @@ export async function callPatient(
 export async function startSession(
   queueEntryId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { success: false, error: "Insufficient permissions to start session" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("queue_entries")
     .update({ status: "in_session" })
     .eq("id", queueEntryId)
@@ -149,21 +123,12 @@ export async function startSession(
 export async function skipPatient(
   queueEntryId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { success: false, error: "Insufficient permissions to skip patients" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("queue_entries")
     .update({ status: "skipped" })
     .eq("id", queueEntryId)
@@ -180,21 +145,12 @@ export async function skipPatient(
 export async function requeuePatient(
   queueEntryId: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { success: false, error: "Insufficient permissions to requeue patients" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("queue_entries")
     .update({
       status: "waiting",
@@ -216,21 +172,12 @@ export async function updatePriority(
   queueEntryId: string,
   priority: PriorityLevel
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { success: false, error: "Insufficient permissions to update priority" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("queue_entries")
     .update({ priority })
     .eq("id", queueEntryId);
@@ -247,21 +194,12 @@ export async function assignRoom(
   queueEntryId: string,
   roomStation: string
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !STAFF_ROLES.includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, [...STAFF_ROLES])) {
     return { success: false, error: "Insufficient permissions to assign rooms" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("queue_entries")
     .update({ room_station: roomStation })
     .eq("id", queueEntryId);

@@ -40,6 +40,36 @@ function getRouteSegments(pathname: string): string[] {
   return segments;
 }
 
+/**
+ * Get the user's authoritative role from the user_roles DB table.
+ * Falls back to JWT metadata if DB query fails (graceful degradation).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getUserRole(
+  supabaseClient: any,
+  userId: string,
+  fallbackRole?: string
+): Promise<UserRole> {
+  try {
+    const { data, error } = await supabaseClient
+      .from("user_roles")
+      .select("roles(name)")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!error && data && typeof data === "object" && "roles" in data) {
+      const rolesObj = data as { roles: { name: string } | null };
+      if (rolesObj.roles?.name) {
+        return sanitizeRole(rolesObj.roles.name) as UserRole;
+      }
+    }
+  } catch {
+    // DB query failed, fall through to metadata
+  }
+
+  return sanitizeRole(fallbackRole ?? "patient") as UserRole;
+}
+
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: request.headers },
@@ -64,7 +94,14 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && (pathname === "/login" || pathname === "/signup" || pathname === "/")) {
-    const role = sanitizeRole(user.user_metadata?.role as string);
+    // Use DB role for authorization, not JWT metadata
+    const { createServerClient } = await import("@repo/supabase/server");
+    const supabase = await createServerClient();
+    const role = await getUserRole(
+      supabase,
+      user.id,
+      user.user_metadata?.role as string | undefined
+    );
     const dashboard = ROLE_DASHBOARDS[role] || "/dashboard";
     const url = request.nextUrl.clone();
     url.pathname = dashboard;
@@ -72,7 +109,14 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && !isPublicPath(pathname)) {
-    const role = sanitizeRole(user.user_metadata?.role as string);
+    // Use DB role for route access control, not JWT metadata
+    const { createServerClient } = await import("@repo/supabase/server");
+    const supabase = await createServerClient();
+    const role = await getUserRole(
+      supabase,
+      user.id,
+      user.user_metadata?.role as string | undefined
+    );
     const segments = getRouteSegments(pathname);
     const allowed = segments.some((seg) => isRouteAllowed(seg, role));
     if (segments.length > 0 && !allowed) {

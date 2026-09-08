@@ -79,7 +79,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const role = sanitizeRole(user.user_metadata?.role as string);
+  let role = sanitizeRole(user.user_metadata?.role as string);
+  try {
+    const { data: roleData } = await supabase
+      .from("user_roles" as never)
+      .select("roles(name)")
+      .eq("user_id" as never, user.id)
+      .maybeSingle();
+    const dbName = (roleData as { roles: { name: string } | null } | null)?.roles?.name;
+    if (dbName) role = sanitizeRole(dbName);
+  } catch {
+    // Fall back to JWT metadata role
+  }
   const carinaRole = STAFF_ROLES.has(role) ? "admin" : "client";
 
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

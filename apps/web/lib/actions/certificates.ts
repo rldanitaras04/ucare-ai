@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext, hasRole } from "@/lib/auth";
 import { createDocumentVerification } from "./verification";
 
 function generateVerificationCode(): string {
@@ -32,20 +33,19 @@ export interface Certificate {
   created_at: string;
 }
 
+const VIEWER_ROLES = ["superadmin", "nurse", "staff", "doctor", "dentist"];
+const CREATOR_ROLES = ["superadmin", "nurse", "doctor", "dentist"];
+
 export async function getCertificates(): Promise<{
   data: Certificate[];
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "staff", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, VIEWER_ROLES)) {
     return { data: [], error: "Insufficient permissions" };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("certificates")
     .select("*")
     .order("created_at", { ascending: false });
@@ -61,25 +61,31 @@ export async function createCertificate(cert: {
   content: string;
   valid_until?: string;
 }): Promise<{ data: Certificate | null; error: string | null }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, CREATOR_ROLES)) {
     return { data: null, error: "Insufficient permissions" };
   }
 
-  const { data: numberData } = await supabase.rpc("generate_certificate_number");
+  // Validate patient exists
+  const { data: patient } = await auth.supabase
+    .from("patient_profiles")
+    .select("id")
+    .eq("id", cert.patient_id)
+    .maybeSingle();
+  if (!patient) {
+    return { data: null, error: "Invalid patient ID" };
+  }
+
+  const { data: numberData } = await auth.supabase.rpc("generate_certificate_number");
   if (!numberData) return { data: null, error: "Failed to generate certificate number" };
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("certificates")
     .insert({
       certificate_number: numberData as string,
       patient_id: cert.patient_id,
       encounter_id: cert.encounter_id ?? null,
-      issued_by: user.id,
+      issued_by: auth.user.id,
       certificate_type: cert.certificate_type,
       title: cert.title,
       content: cert.content,
@@ -97,21 +103,17 @@ export async function issueCertificate(certificateId: string): Promise<{
   error: string | null;
   verification_code?: string;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Not authenticated" };
-
-  const callerRole = user.user_metadata?.role as string | undefined;
-  if (!callerRole || !["superadmin", "nurse", "doctor", "dentist"].includes(callerRole)) {
+  const auth = await getAuthContext();
+  if (!hasRole(auth, CREATOR_ROLES)) {
     return { success: false, error: "Insufficient permissions" };
   }
 
-  const { error } = await supabase
+  const { error } = await auth.supabase
     .from("certificates")
     .update({
       status: "issued",
       signed_at: new Date().toISOString(),
-      signed_by: user.id,
+      signed_by: auth.user.id,
     })
     .eq("id", certificateId)
     .eq("status", "draft");
