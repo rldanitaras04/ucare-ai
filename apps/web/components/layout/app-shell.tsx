@@ -145,6 +145,9 @@ export function AppShell({ children, user }: AppShellProps) {
   const [userPersona] = React.useState<PatientPersona | undefined>(
     (user.user_metadata?.persona as PatientPersona) ?? undefined
   );
+  const [userAvatarUrl, setUserAvatarUrl] = React.useState<string | null>(
+    (user.user_metadata?.avatar_url as string) ?? null
+  );
 
   React.useEffect(() => {
     const fetchProfile = async () => {
@@ -157,20 +160,23 @@ export function AppShell({ children, user }: AppShellProps) {
           .eq("user_id" as never, user.id)
           .limit(1);
 
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("role, avatar_url")
+          .eq("id", user.id)
+          .single();
+
         if (roleData && Array.isArray(roleData) && roleData.length > 0) {
           const roleRecord = roleData[0] as unknown as { roles: { name: string } | null };
           if (roleRecord.roles?.name) {
             setUserRole(sanitizeRole(roleRecord.roles.name));
           }
-        } else {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-          if (profileData && (profileData as { role: string }).role) {
-            setUserRole(sanitizeRole((profileData as { role: string }).role));
-          }
+        } else if (profileData && (profileData as { role: string }).role) {
+          setUserRole(sanitizeRole((profileData as { role: string }).role));
+        }
+
+        if (profileData && (profileData as { avatar_url: string | null }).avatar_url) {
+          setUserAvatarUrl((profileData as { avatar_url: string | null }).avatar_url);
         }
       } catch {
         // Keep user_metadata role as fallback
@@ -314,7 +320,7 @@ export function AppShell({ children, user }: AppShellProps) {
 
       <CarinaChatWidget
         role={["patient"].includes(userRole) ? "client" : "admin"}
-        avatarUrl="/carina.png"
+        avatarUrl={userAvatarUrl}
       />
     </div>
   );
