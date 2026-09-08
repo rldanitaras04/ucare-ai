@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "UCare AI - Clinic Management System",
   description: "Unified clinic management system with role-based access",
+  icons: {
+    icon: "/clinic_logo.png",
+  },
 };
 
 export default function RootLayout({
