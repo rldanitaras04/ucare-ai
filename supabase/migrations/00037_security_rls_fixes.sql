@@ -16,6 +16,8 @@
 -- meaning ANY authenticated user can insert notifications for ANY user_id.
 
 DROP POLICY IF EXISTS "System can create notifications" ON notifications;
+DROP POLICY IF EXISTS "Users can insert own notifications" ON notifications;
+DROP POLICY IF EXISTS "Admins can insert notifications for any user" ON notifications;
 
 -- Users can insert notifications for themselves (e.g., marking in-app)
 CREATE POLICY "Users can insert own notifications"
@@ -41,6 +43,8 @@ CREATE POLICY "Admins can insert notifications for any user"
 -- which lets nurses modify OTHER nurses' prescriptions.
 
 DROP POLICY IF EXISTS "Clinic admins can manage prescriptions" ON prescriptions;
+DROP POLICY IF EXISTS "Superadmins can manage prescriptions" ON prescriptions;
+DROP POLICY IF EXISTS "Staff can manage prescriptions" ON prescriptions;
 
 -- Superadmins can manage all prescriptions
 CREATE POLICY "Superadmins can manage prescriptions"
@@ -73,6 +77,8 @@ CREATE POLICY "Staff can manage prescriptions"
 -- which lets nurses modify other nurses' vital sign records.
 
 DROP POLICY IF EXISTS "Clinic admins can manage vital signs" ON vital_signs;
+DROP POLICY IF EXISTS "Superadmins can manage vital signs" ON vital_signs;
+DROP POLICY IF EXISTS "Staff can manage vital signs" ON vital_signs;
 
 -- Superadmins can manage all vital signs
 CREATE POLICY "Superadmins can manage vital signs"
@@ -103,6 +109,8 @@ CREATE POLICY "Staff can manage vital signs"
 -- ═══════════════════════════════════════════════════════════════
 
 DROP POLICY IF EXISTS "Clinic admins can manage nursing assessments" ON nursing_assessments;
+DROP POLICY IF EXISTS "Superadmins can manage nursing assessments" ON nursing_assessments;
+DROP POLICY IF EXISTS "Staff can manage nursing assessments" ON nursing_assessments;
 
 -- Superadmins can manage all nursing assessments
 CREATE POLICY "Superadmins can manage nursing assessments"
@@ -133,6 +141,8 @@ CREATE POLICY "Staff can manage nursing assessments"
 -- ═══════════════════════════════════════════════════════════════
 
 DROP POLICY IF EXISTS "Clinic admins can manage certificates" ON certificates;
+DROP POLICY IF EXISTS "Superadmins can manage certificates" ON certificates;
+DROP POLICY IF EXISTS "Staff can manage certificates" ON certificates;
 
 -- Superadmins can manage all certificates
 CREATE POLICY "Superadmins can manage certificates"
@@ -163,11 +173,16 @@ CREATE POLICY "Staff can manage certificates"
 -- ═══════════════════════════════════════════════════════════════
 -- Problem: Any authenticated user can read/update/delete ANY avatar.
 -- Fix: Users can only manage avatars in their own subfolder.
+-- Drop both old (00027) and new (previous partial run) policy names.
 
 DROP POLICY IF EXISTS "Authenticated users can upload avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload own avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can read own avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can read avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can update own avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users to delete own avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete own avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Public read access for avatars" ON storage.objects;
 
 -- Upload: users can upload to their own subfolder (profile-avatars/{user_id}/*.png)
 CREATE POLICY "Authenticated users can upload own avatars"
@@ -212,6 +227,16 @@ USING (
   AND (storage.foldername(name))[2] = auth.uid()::text
 );
 
+-- Public read access for avatar images (for displaying in navbar, etc.)
+CREATE POLICY "Public read access for avatars"
+ON storage.objects
+FOR SELECT
+TO public
+USING (
+  bucket_id = 'ucare-ai-bucket'
+  AND (storage.foldername(name))[1] = 'profile-avatars'
+);
+
 -- ═══════════════════════════════════════════════════════════════
 -- 7. DOCUMENT VERIFICATIONS: Restrict IP-exposing SELECT
 -- ═══════════════════════════════════════════════════════════════
@@ -224,6 +249,7 @@ BEGIN
   -- Check for any existing SELECT policies that allow public access
   DROP POLICY IF EXISTS "document_verifications_public_select" ON document_verifications;
   DROP POLICY IF EXISTS "document_verifications_select" ON document_verifications;
+  DROP POLICY IF EXISTS "document_verifications_select_authenticated" ON document_verifications;
 EXCEPTION WHEN OTHERS THEN
   -- Ignore if policy doesn't exist
 END $$;
