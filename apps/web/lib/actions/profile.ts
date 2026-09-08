@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@repo/supabase/server";
+import { getAuthContext } from "@/lib/auth";
 
 export async function updateProfileFullName(fullName: string): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Not authenticated" };
+  const auth = await getAuthContext();
+  const supabase = auth.supabase;
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { full_name: fullName },
@@ -20,7 +20,7 @@ export async function updateProfileFullName(fullName: string): Promise<{
   const { error: dbError } = await supabase
     .from("profiles")
     .update({ full_name: fullName })
-    .eq("id", user.id);
+    .eq("id", auth.user.id);
 
   if (dbError) return { success: false, error: dbError.message };
 
@@ -32,9 +32,8 @@ export async function updateProfilePhone(phone: string): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Not authenticated" };
+  const auth = await getAuthContext();
+  const supabase = auth.supabase;
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { phone },
@@ -45,7 +44,7 @@ export async function updateProfilePhone(phone: string): Promise<{
   const { error: dbError } = await supabase
     .from("profiles")
     .update({ phone } as never)
-    .eq("id", user.id);
+    .eq("id", auth.user.id);
 
   if (dbError) return { success: false, error: dbError.message };
 
@@ -57,9 +56,8 @@ export async function updateProfileAvatar(avatarUrl: string): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Not authenticated" };
+  const auth = await getAuthContext();
+  const supabase = auth.supabase;
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { avatar_url: avatarUrl },
@@ -70,7 +68,7 @@ export async function updateProfileAvatar(avatarUrl: string): Promise<{
   const { error: dbError } = await supabase
     .from("profiles")
     .update({ avatar_url: avatarUrl })
-    .eq("id", user.id);
+    .eq("id", auth.user.id);
 
   if (dbError) return { success: false, error: dbError.message };
 
@@ -82,9 +80,8 @@ export async function deleteProfileAvatar(): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Not authenticated" };
+  const auth = await getAuthContext();
+  const supabase = auth.supabase;
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { avatar_url: null },
@@ -95,7 +92,7 @@ export async function deleteProfileAvatar(): Promise<{
   const { error: dbError } = await supabase
     .from("profiles")
     .update({ avatar_url: null })
-    .eq("id", user.id);
+    .eq("id", auth.user.id);
 
   if (dbError) return { success: false, error: dbError.message };
 
