@@ -182,6 +182,9 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
     devDependencies:
+      '@eslint/eslintrc':
+        specifier: ^3.3.7
+        version: 3.3.7
       '@supabase/supabase-js':
         specifier: ^2.49.1
         version: 2.115.0
