@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Avatar } from "@repo/ui";
+import { sanitizeRole } from "@repo/auth";
 import { updateProfileFullName, updateProfilePhone, updateProfileAvatar, deleteProfileAvatar } from "@/lib/actions/profile";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -51,7 +52,7 @@ export default function ProfilePage() {
       const roleNames = ((roleRows ?? []) as { roles: { name: string } | null }[])
         .map((r) => r.roles?.name)
         .filter(Boolean) as string[];
-      const canonicalRole = roleNames[0] ?? p?.role ?? (authUser.user_metadata?.role as string) ?? "patient";
+      const canonicalRole = sanitizeRole(roleNames[0] ?? p?.role ?? (authUser.user_metadata?.role as string) ?? "patient");
 
       setProfile({
         full_name: p?.full_name ?? null,
@@ -70,7 +71,7 @@ export default function ProfilePage() {
   const displayName = profile?.full_name || (user?.user_metadata?.full_name as string) || user?.email?.split("@")[0] || "User";
   const email = user?.email || "No email";
   const phone = profile?.phone || (user?.user_metadata?.phone as string) || "Not set";
-  const role = profile?.role ?? (user?.user_metadata?.role as string) ?? "patient";
+  const role = profile?.role ?? sanitizeRole((user?.user_metadata?.role as string) ?? "patient");
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "Unknown";
