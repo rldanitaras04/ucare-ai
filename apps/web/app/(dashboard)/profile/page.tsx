@@ -5,7 +5,7 @@ import { Avatar } from "@repo/ui";
 import { updateProfileFullName, updateProfilePhone, updateProfileAvatar, deleteProfileAvatar } from "@/lib/actions/profile";
 
 const ROLE_LABELS: Record<string, string> = {
-  superadmin: "Super Admin",
+  superadmin: "Superadmin",
   nurse: "Nurse",
   staff: "Staff",
   doctor: "Doctor",
